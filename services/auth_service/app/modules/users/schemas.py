@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -13,9 +12,9 @@ class UserOut(BaseModel):
 
   role: str
 
-  created_at: Optional[datetime] = None
-  updated_at: Optional[datetime] = None
-  last_login: Optional[datetime] = None
+  created_at: datetime | None = None
+  updated_at: datetime | None = None
+  last_login: datetime | None = None
 
-  display_name: Optional[str] = None
-  login: Optional[str] = None
+  display_name: str | None = None
+  login: str | None = None

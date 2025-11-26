@@ -1,6 +1,6 @@
 import os
 
-from pydantic import EmailStr, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings
 from sqlalchemy import URL
 
@@ -40,12 +40,12 @@ class Settings(BaseSettings):
 
 
 DATABASE_URL = URL.create(
-    drivername="postgresql+psycopg",
-    username=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    host=os.getenv("DB_HOST", "db_auth"),
-    port=int(os.getenv("DB_PORT", "5432")),
-    database=os.getenv("DB_NAME", "auth"),
+  drivername="postgresql+psycopg",
+  username=os.getenv("DB_USER"),
+  password=os.getenv("DB_PASSWORD"),
+  host=os.getenv("DB_HOST", "db_auth"),
+  port=int(os.getenv("DB_PORT", "5432")),
+  database=os.getenv("DB_NAME", "auth"),
 )
 
 settings = Settings()

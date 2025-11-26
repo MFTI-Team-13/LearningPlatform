@@ -1,10 +1,8 @@
 import logging
 
-from fastapi import FastAPI
-
 from app.common.db.session import SessionLocal
 from app.core.logging import setup_logging
-from app.modules.auth.bootstrap import run_bootstrap
+from fastapi import FastAPI
 
 
 def register_startup(app: FastAPI) -> None:
@@ -14,7 +12,7 @@ def register_startup(app: FastAPI) -> None:
   async def _on_startup():
     async with SessionLocal() as db:
       try:
-        # await run_bootstrap(db)
-        print('Learning Platform')
+        await db.execute("SELECT 1")
+        logging.getLogger(__name__).info("Learning Platform started")
       except Exception as e:
         logging.getLogger(__name__).exception("Bootstrap failed: %s", e)

@@ -1,4 +1,3 @@
-# app/core/security.py
 from __future__ import annotations
 
 import datetime as dt
@@ -9,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import jwt
+from app.core.config import settings
 from jwt import (
   ExpiredSignatureError,
   InvalidSignatureError,
@@ -17,8 +17,6 @@ from jwt import (
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 from starlette.responses import Response
-
-from app.core.config import settings
 
 HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -35,13 +33,11 @@ def _int_from_env_or_settings(env: str, settings_value, default: int) -> int:
     return int(settings_value)
   return int(default)
 
+
 @lru_cache
 def _pwd_ctx() -> CryptContext:
-
   scheme = (
-      getattr(settings, "password_scheme", None)
-      or os.getenv("PASSWORD_SCHEME")
-      or "argon2"
+    getattr(settings, "password_scheme", None) or os.getenv("PASSWORD_SCHEME") or "argon2"
   ).lower()
 
   a_time = _int_from_env_or_settings(
@@ -65,8 +61,8 @@ def _pwd_ctx() -> CryptContext:
     schemes = ["bcrypt", "argon2"]
     deprecated = ["argon2"]
     bcrypt_rounds = _int_from_env_or_settings(
-      "BCRYPT_ROUNDS", getattr(settings, "bcrypt_rounds", None),
-      12)
+      "BCRYPT_ROUNDS", getattr(settings, "bcrypt_rounds", None), 12
+    )
 
     return CryptContext(
       schemes=schemes,
@@ -89,6 +85,7 @@ def _pwd_ctx() -> CryptContext:
       argon2__parallelism=a_par,
     )
 
+
 def set_token_cookies(response: Response, access: str, refresh: str) -> None:
   common = dict(
     httponly=True,
@@ -97,7 +94,12 @@ def set_token_cookies(response: Response, access: str, refresh: str) -> None:
     path="/",
   )
   response.set_cookie("access_token", access, max_age=settings.jwt_access_ttl_min * 60, **common)
-  response.set_cookie("refresh_token", refresh, max_age=settings.jwt_refresh_ttl_days * 24 * 3600, **common)
+  response.set_cookie(
+    "refresh_token",
+    refresh,
+    max_age=settings.jwt_refresh_ttl_days * 24 * 3600,
+    **common,
+  )
 
 
 def hash_password(raw: str) -> str:
@@ -139,9 +141,7 @@ def make_access_jwt(subject: str) -> str:
     "iss": settings.jwt_iss,
     "sub": subject,
     "iat": int(now.timestamp()),
-    "exp": int(
-      (now + dt.timedelta(minutes=settings.jwt_access_ttl_min)).timestamp()
-    ),
+    "exp": int((now + dt.timedelta(minutes=settings.jwt_access_ttl_min)).timestamp()),
     "type": "access",
   }
   return jwt.encode(payload, _private_key, algorithm=settings.jwt_alg)
@@ -153,9 +153,7 @@ def make_refresh_jwt(subject: str, jti: str) -> str:
     "iss": settings.jwt_iss,
     "sub": subject,
     "iat": int(now.timestamp()),
-    "exp": int(
-      (now + dt.timedelta(days=settings.jwt_refresh_ttl_days)).timestamp()
-    ),
+    "exp": int((now + dt.timedelta(days=settings.jwt_refresh_ttl_days)).timestamp()),
     "jti": jti,
     "type": "refresh",
   }

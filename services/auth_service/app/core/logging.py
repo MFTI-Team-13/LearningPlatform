@@ -1,4 +1,3 @@
-# app/core/logging.py
 from __future__ import annotations
 
 import json
@@ -59,11 +58,10 @@ def _base_config(level: _LogLevel, json_logs: bool) -> dict:
       },
     },
     "loggers": {
-      "": {  # root
+      "": {
         "handlers": ["console"],
         "level": level,
       },
-      # Uvicorn/Gunicorn
       "uvicorn": {
         "handlers": ["uvicorn_console"],
         "level": level,
@@ -87,11 +85,10 @@ def _base_config(level: _LogLevel, json_logs: bool) -> dict:
 
 
 def setup_logging(
-    level: _LogLevel | None = None,
-    *,
-    json_logs: bool | None = None,
+  level: _LogLevel | None = None,
+  *,
+  json_logs: bool | None = None,
 ) -> None:
-
   env_level = os.getenv("APP_LOG_LEVEL")
   if level is None:
     level = (env_level or "INFO").upper()

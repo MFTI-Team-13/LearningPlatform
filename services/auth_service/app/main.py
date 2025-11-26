@@ -1,12 +1,11 @@
 import os
 
-from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
-
 from app.api.main_router import main_router
 from app.core.config import settings
 from app.core.startup import register_startup
 from app.middleware.auth import setup_auth
+from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
 
 def try_pycharm_attach():
@@ -38,7 +37,7 @@ def create_app() -> FastAPI:
   )
   setup_auth(app)
 
-  origins=settings.cors_origins
+  origins = settings.cors_origins
 
   app.add_middleware(
     CORSMiddleware,

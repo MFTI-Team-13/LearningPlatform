@@ -6,4 +6,5 @@
 node_modules
 .env
 infra/secrets/*
+!infra/secrets/*.example.env
 .idea

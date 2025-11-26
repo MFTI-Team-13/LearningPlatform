@@ -49,10 +49,26 @@ services:
     env_file:
       - ./secrets/auth_service.env
 
+  db_courses:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: courses
+      POSTGRES_USER: courses_user
+      POSTGRES_PASSWORD: ${COURSES_DB_PASSWORD:?set in secrets}
+    env_file:
+      - ./secrets/courses_service.env
+    volumes:
+      - courses_pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   courses_service:
     build:
       context: ..
-      dockerfile: services/courses_service/Dockerfile
+    dockerfile: services/courses_service/Dockerfile
     depends_on:
       db_courses:
         condition: service_healthy
@@ -72,21 +88,46 @@ services:
       sh -c "alembic upgrade head || true;
              uvicorn app.app:create_app --factory --host 0.0.0.0 --port 8003 --reload"
 
-  db_courses:
+  db_progress:
     image: postgres:16
     environment:
-      POSTGRES_DB: courses
-      POSTGRES_USER: courses_user
-      POSTGRES_PASSWORD: ${COURSES_DB_PASSWORD:?set in secrets}
+      POSTGRES_DB: progress
+      POSTGRES_USER: progress_user
+      POSTGRES_PASSWORD: ${PROGRESS_DB_PASSWORD:?set in secrets}
     env_file:
-      - ./secrets/courses_service.env
+      - ./secrets/progress_service.env
     volumes:
-      - courses_pgdata:/var/lib/postgresql/data
+      - progress_pgdata_dev:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 20
+
+  progress_service:
+    build:
+      context: ..
+      dockerfile: services/progress_service/Dockerfile
+    depends_on:
+      db_progress:
+        condition: service_healthy
+    env_file:
+      - ./secrets/progress_service.env
+    environment:
+      WATCHFILES_FORCE_POLLING: "true"
+      PYTHONPATH: /app:/app/shared
+    volumes:
+      - ../services/progress_service/app:/app/app
+      - ../services/progress_service/migrations:/app/migrations
+      - ../services/progress_service/alembic.ini:/app/alembic.ini
+      - ../shared:/app/shared
+    ports:
+      - "8005:8005"
+    command: >
+      sh -c "alembic upgrade head || true;
+             uvicorn app.app:create_app --factory --host 0.0.0.0 --port 8005 --reload"
+
 volumes:
   auth_pgdata_dev:
-  courses_pgdata:
+  courses_pgdata_dev:
+  progress_pgdata_dev:

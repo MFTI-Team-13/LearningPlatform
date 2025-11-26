@@ -67,3 +67,20 @@ P.S. Если нет, то Pull requests → New pull request
 *-f рантайм/без -f на текущий момент без новых логов*
 
 >docker compose -p infra logs -f auth_service
+
+## Перейти в директорию своего микросервиса
+>cd services/auth_service
+
+>cd services/courses_service
+
+>cd services/progress_service
+
+## Для минимизирования "плохого" кода
+#### Посмотреть все проблемы по стилю/линту
+>ruff check .
+
+#### Отформатировать весь проект
+>black .
+
+#### Прогнать все хуки как в коммите (ruff + black)
+>pre-commit run --all-files

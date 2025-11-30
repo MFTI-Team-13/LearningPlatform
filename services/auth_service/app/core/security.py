@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import hashlib
 import os
@@ -8,6 +9,14 @@ from functools import lru_cache
 from pathlib import Path
 
 import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import (
+  Encoding,
+  NoEncryption,
+  PrivateFormat,
+  PublicFormat,
+)
 from jwt import (
   ExpiredSignatureError,
   InvalidSignatureError,
@@ -123,14 +132,44 @@ def needs_rehash(hashed: str) -> bool:
     return True
 
 
-def _read_keys():
+def _ensure_rsa_key_pair() -> tuple[str, str]:
+  if not settings.jwt_private_key_path or not settings.jwt_public_key_path:
+    msg = "RSA key paths must be configured when using RS256"
+    raise RuntimeError(msg)
+
+  priv_path = Path(settings.jwt_private_key_path)
+  pub_path = Path(settings.jwt_public_key_path)
+
+  if priv_path.exists() and pub_path.exists():
+    return priv_path.read_text(), pub_path.read_text()
+
+  priv_path.parent.mkdir(parents=True, exist_ok=True)
+  pub_path.parent.mkdir(parents=True, exist_ok=True)
+
+  key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+  private_bytes = key.private_bytes(
+    encoding=Encoding.PEM,
+    format=PrivateFormat.TraditionalOpenSSL,
+    encryption_algorithm=NoEncryption(),
+  )
+  public_bytes = key.public_key().public_bytes(
+    encoding=Encoding.PEM,
+    format=PublicFormat.SubjectPublicKeyInfo,
+  )
+
+  priv_path.write_bytes(private_bytes)
+  pub_path.write_bytes(public_bytes)
+
+  return private_bytes.decode(), public_bytes.decode()
+
+
+def _read_keys() -> tuple[str, str]:
   if settings.jwt_alg == "RS256":
-    private_key = Path(settings.jwt_private_key_path).read_text()
-    public_key = Path(settings.jwt_public_key_path).read_text()
-  else:
-    private_key = settings.jwt_secret
-    public_key = settings.jwt_secret
-  return private_key, public_key
+    return _ensure_rsa_key_pair()
+  if not settings.jwt_secret:
+    msg = "JWT_SECRET must be set when using symmetric algorithms"
+    raise RuntimeError(msg)
+  return settings.jwt_secret, settings.jwt_secret
 
 
 _private_key, _public_key = _read_keys()
@@ -205,3 +244,24 @@ def verify_refresh_token(token: str) -> dict:
     raise TokenError("no_sub_or_jti") from None
 
   return payload
+
+
+def get_public_key_pem() -> str:
+  return _public_key
+
+
+def public_key_to_jwk_components(public_key_pem: str) -> tuple[str, str]:
+  key = serialization.load_pem_public_key(public_key_pem.encode())
+  if not isinstance(key, rsa.RSAPublicKey):
+    raise ValueError("Public key must be RSA")
+  numbers = key.public_numbers()
+  n_bytes = numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")
+  e_bytes = numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")
+  n = base64.urlsafe_b64encode(n_bytes).rstrip(b"=").decode()
+  e = base64.urlsafe_b64encode(e_bytes).rstrip(b"=").decode()
+  return n, e
+
+
+def ensure_keys_ready() -> None:
+  global _private_key, _public_key
+  _private_key, _public_key = _read_keys()

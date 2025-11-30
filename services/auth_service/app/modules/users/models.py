@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum as PyEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,13 +31,22 @@ class User(Base):
   role: Mapped[RoleEnum] = mapped_column(
     Enum(RoleEnum, name="user_role_enum"), nullable=False, default=RoleEnum.student
   )
-  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  is_active: Mapped[bool] = mapped_column(
+    Boolean, nullable=False, default=True, server_default=text("true")
+  )
+  is_verified: Mapped[bool] = mapped_column(
+    Boolean, nullable=False, default=False, server_default=text("false")
+  )
+  must_change_password: Mapped[bool] = mapped_column(
+    Boolean, nullable=False, default=False, server_default=text("false")
+  )
   created_at: Mapped[datetime] = mapped_column(
     DateTime(timezone=True), server_default=func.now(), nullable=False
   )
   updated_at: Mapped[datetime] = mapped_column(
     DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
   )
+  last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
   profile: Mapped[UserProfile] = relationship("UserProfile", back_populates="user", uselist=False)
   refresh_tokens: Mapped[list[RefreshToken]] = relationship("RefreshToken", back_populates="user")
@@ -56,6 +65,7 @@ class UserProfile(Base):
   first_name: Mapped[str] = mapped_column(String(100), nullable=False)
   last_name: Mapped[str] = mapped_column(String(100), nullable=False)
   middle_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
   created_at: Mapped[datetime] = mapped_column(
     DateTime(timezone=True), server_default=func.now(), nullable=False
   )

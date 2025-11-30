@@ -8,7 +8,6 @@ from functools import lru_cache
 from pathlib import Path
 
 import jwt
-from app.core.config import settings
 from jwt import (
   ExpiredSignatureError,
   InvalidSignatureError,
@@ -17,6 +16,8 @@ from jwt import (
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 from starlette.responses import Response
+
+from app.core.config import settings
 
 HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 

@@ -1,8 +1,9 @@
 import logging
 
+from fastapi import FastAPI
+
 from app.common.db.session import SessionLocal
 from app.core.logging import setup_logging
-from fastapi import FastAPI
 
 
 def register_startup(app: FastAPI) -> None:

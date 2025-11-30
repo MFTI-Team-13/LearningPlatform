@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.db.session import get_db
 from app.core.config import settings
 from app.core.security import (
+  TokenError,
   get_public_key_pem,
   hash_password,
   make_access_jwt,
@@ -19,9 +20,10 @@ from app.core.security import (
   public_key_to_jwk_components,
   set_token_cookies,
   verify_password,
+  verify_refresh_token,
 )
 from app.modules.auth.models import RefreshToken
-from app.modules.auth.schemas import LoginRequest
+from app.modules.auth.schemas import LoginRequest, RefreshRequest
 from app.modules.users.models import User, UserProfile
 from app.modules.users.schemas import UserRegisterRequest
 
@@ -116,6 +118,66 @@ async def login(
     message="login_successful",
     access_token=access_token,
     refresh_token=refresh_token,
+  )
+
+
+@router.post("/refresh")
+async def refresh_tokens(
+  payload: RefreshRequest,
+  response: Response,
+  request: Request,
+  db: DbSession,
+):
+  raw_refresh = payload.refresh_token or request.cookies.get("refresh_token")
+  if not raw_refresh:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="refresh_required")
+
+  try:
+    claims = verify_refresh_token(raw_refresh)
+  except TokenError as exc:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+  token_hash = _hash_refresh_token(raw_refresh)
+  refresh_entry = await db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
+  now = dt.datetime.now(dt.UTC)
+
+  if (
+    not refresh_entry
+    or refresh_entry.revoked_at is not None
+    or refresh_entry.expires_at <= now
+    or str(refresh_entry.id) != claims.get("jti")
+  ):
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh_invalid")
+
+  user = await db.get(User, refresh_entry.user_id)
+  if not user or not user.is_active:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_inactive")
+
+  new_refresh_id = uuid.uuid4()
+  access_token = make_access_jwt(str(user.id))
+  new_refresh_token = make_refresh_jwt(str(user.id), str(new_refresh_id))
+
+  refresh_entry.revoked_at = now
+  refresh_entry.replaced_by = new_refresh_id
+
+  replacement = RefreshToken(
+    id=new_refresh_id,
+    user_id=user.id,
+    token_hash=_hash_refresh_token(new_refresh_token),
+    fingerprint=request.headers.get("x-device-fingerprint"),
+    user_agent=request.headers.get("user-agent"),
+    expires_at=now + dt.timedelta(days=settings.jwt_refresh_ttl_days),
+  )
+  db.add(replacement)
+
+  await db.commit()
+
+  set_token_cookies(response, access_token, new_refresh_token)
+
+  return ResponseUtils.success(
+    message="tokens_refreshed",
+    access_token=access_token,
+    refresh_token=new_refresh_token,
   )
 
 

@@ -8,6 +8,7 @@ from learning_platform_common.utils import ResponseUtils
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.common.db.session import get_db
 from app.core.config import settings
@@ -19,13 +20,14 @@ from app.core.security import (
   make_refresh_jwt,
   public_key_to_jwk_components,
   set_token_cookies,
+  verify_access_token,
   verify_password,
   verify_refresh_token,
 )
 from app.modules.auth.models import RefreshToken
 from app.modules.auth.schemas import LoginRequest, RefreshRequest
 from app.modules.users.models import User, UserProfile
-from app.modules.users.schemas import UserRegisterRequest
+from app.modules.users.schemas import UserOut, UserRegisterRequest
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
@@ -34,6 +36,13 @@ router = APIRouter()
 
 def _hash_refresh_token(raw: str) -> str:
   return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _extract_access_token(request: Request) -> str | None:
+  auth_header = request.headers.get("authorization")
+  if auth_header and auth_header.lower().startswith("bearer "):
+    return auth_header.split(" ", 1)[1].strip()
+  return request.cookies.get("access_token")
 
 
 @router.get("/")
@@ -179,6 +188,50 @@ async def refresh_tokens(
     access_token=access_token,
     refresh_token=new_refresh_token,
   )
+
+
+@router.get("/me")
+async def get_current_user(
+  request: Request,
+  db: DbSession,
+):
+  raw_access = _extract_access_token(request)
+  if not raw_access:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="access_required")
+
+  try:
+    claims = verify_access_token(raw_access)
+  except TokenError as exc:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+  try:
+    user_id = uuid.UUID(claims.get("sub", ""))
+  except (TypeError, ValueError):
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_subject"
+    ) from None
+
+  user = await db.scalar(select(User).options(selectinload(User.profile)).where(User.id == user_id))
+
+  if not user or not user.is_active:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_inactive")
+
+  profile = user.profile
+  user_payload = UserOut(
+    id=str(user.id),
+    email=user.email or "",
+    is_active=user.is_active,
+    is_verified=user.is_verified,
+    must_change_password=user.must_change_password,
+    role=user.role.value if hasattr(user.role, "value") else str(user.role),
+    created_at=user.created_at,
+    updated_at=user.updated_at,
+    last_login=user.last_login,
+    display_name=profile.display_name if profile else None,
+    login=user.username,
+  ).model_dump()
+
+  return ResponseUtils.success(message="current_user", user=user_payload)
 
 
 @router.get("/.well-known/jwks.json")

@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from learning_platform_common.utils import ResponseUtils
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -25,7 +25,7 @@ from app.core.security import (
   verify_refresh_token,
 )
 from app.modules.auth.models import RefreshToken
-from app.modules.auth.schemas import LoginRequest, RefreshRequest
+from app.modules.auth.schemas import ChangePasswordRequest, LoginRequest, RefreshRequest
 from app.modules.users.models import User, UserProfile
 from app.modules.users.schemas import UserOut, UserRegisterRequest
 
@@ -232,6 +232,55 @@ async def get_current_user(
   ).model_dump()
 
   return ResponseUtils.success(message="current_user", user=user_payload)
+
+
+@router.post("/change-password")
+async def change_password(
+  payload: ChangePasswordRequest,
+  request: Request,
+  db: DbSession,
+):
+  raw_access = _extract_access_token(request)
+  if not raw_access:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="access_required")
+
+  try:
+    claims = verify_access_token(raw_access)
+  except TokenError as exc:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+  try:
+    user_id = uuid.UUID(claims.get("sub", ""))
+  except (TypeError, ValueError):
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail="invalid_subject",
+    ) from None
+
+  user = await db.get(User, user_id)
+  if not user or not user.is_active:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_inactive")
+
+  if not verify_password(payload.current_password, user.hashed_password):
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="wrong_password")
+
+  if payload.current_password == payload.new_password:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="password_same")
+
+  user.hashed_password = hash_password(payload.new_password)
+  user.must_change_password = False
+
+  now = dt.datetime.now(dt.UTC)
+  await db.execute(
+    update(RefreshToken)
+    .where(RefreshToken.user_id == user.id)
+    .where(RefreshToken.revoked_at.is_(None))
+    .values(revoked_at=now)
+  )
+
+  await db.commit()
+
+  return ResponseUtils.success(message="password_changed")
 
 
 @router.get("/.well-known/jwks.json")

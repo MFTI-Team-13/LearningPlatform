@@ -17,5 +17,6 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    delete_flg = Column(Boolean, nullable=False, default=False)
 
     course = relationship("Course", back_populates="users", cascade="all, delete-orphan")

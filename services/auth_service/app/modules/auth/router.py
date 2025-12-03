@@ -111,13 +111,20 @@ async def login(
   request: Request,
   db: DbSession,
 ):
-  user = await db.scalar(select(User).where(User.username == payload.username))
+  user = await db.scalar(
+    select(User).options(selectinload(User.role)).where(User.username == payload.username)
+  )
   if not user or not verify_password(payload.password, user.hashed_password):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_credentials")
 
+  if not user.role:
+    raise HTTPException(
+      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="role_not_configured"
+    )
+
   now = dt.datetime.now(dt.UTC)
   refresh_id = uuid.uuid4()
-  access_token = make_access_jwt(str(user.id))
+  access_token = make_access_jwt(str(user.id), user.role.slug)
   refresh_token = make_refresh_jwt(str(user.id), str(refresh_id))
 
   refresh_entry = RefreshToken(
@@ -172,12 +179,19 @@ async def refresh_tokens(
   ):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh_invalid")
 
-  user = await db.get(User, refresh_entry.user_id)
+  user = await db.scalar(
+    select(User).options(selectinload(User.role)).where(User.id == refresh_entry.user_id)
+  )
   if not user or not user.is_active:
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_inactive")
 
+  if not user.role:
+    raise HTTPException(
+      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="role_not_configured"
+    )
+
   new_refresh_id = uuid.uuid4()
-  access_token = make_access_jwt(str(user.id))
+  access_token = make_access_jwt(str(user.id), user.role.slug)
   new_refresh_token = make_refresh_jwt(str(user.id), str(new_refresh_id))
 
   refresh_entry.revoked_at = now

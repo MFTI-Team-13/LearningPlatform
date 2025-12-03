@@ -175,7 +175,7 @@ def _read_keys() -> tuple[str, str]:
 _private_key, _public_key = _read_keys()
 
 
-def make_access_jwt(subject: str) -> str:
+def make_access_jwt(subject: str, role: str | None = None) -> str:
   now = dt.datetime.now(dt.UTC)
   payload: dict = {
     "iss": settings.jwt_iss,
@@ -184,6 +184,8 @@ def make_access_jwt(subject: str) -> str:
     "exp": int((now + dt.timedelta(minutes=settings.jwt_access_ttl_min)).timestamp()),
     "type": "access",
   }
+  if role:
+    payload["role"] = role
   return jwt.encode(payload, _private_key, algorithm=settings.jwt_alg)
 
 

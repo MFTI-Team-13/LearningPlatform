@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum as PyEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,12 +12,7 @@ from app.common.db.base import Base
 
 if TYPE_CHECKING:
   from app.modules.auth.models import RefreshToken
-
-
-class RoleEnum(str, PyEnum):
-  student = "student"
-  teacher = "teacher"
-  admin = "admin"
+  from app.modules.roles.models import Role
 
 
 class User(Base):
@@ -28,8 +22,8 @@ class User(Base):
   username: Mapped[str] = mapped_column(String(150), unique=True, nullable=False, index=True)
   email: Mapped[str | None] = mapped_column(String(255), nullable=True)
   hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-  role: Mapped[RoleEnum] = mapped_column(
-    Enum(RoleEnum, name="user_role_enum"), nullable=False, default=RoleEnum.student
+  role_id: Mapped[uuid.UUID] = mapped_column(
+    PGUUID(as_uuid=True), ForeignKey("roles.id"), nullable=False, index=True
   )
   is_active: Mapped[bool] = mapped_column(
     Boolean, nullable=False, default=True, server_default=text("true")
@@ -49,10 +43,11 @@ class User(Base):
   last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
   profile: Mapped[UserProfile] = relationship("UserProfile", back_populates="user", uselist=False)
+  role: Mapped[Role] = relationship("Role", back_populates="users")
   refresh_tokens: Mapped[list[RefreshToken]] = relationship("RefreshToken", back_populates="user")
 
   def __repr__(self) -> str:
-    return f"User(id={self.id}, username={self.username!r}, role={self.role})"
+    return f"User(id={self.id}, username={self.username!r}, role_id={self.role_id})"
 
 
 class UserProfile(Base):

@@ -26,6 +26,7 @@ from app.core.security import (
 )
 from app.modules.auth.models import RefreshToken
 from app.modules.auth.schemas import ChangePasswordRequest, LoginRequest, RefreshRequest
+from app.modules.roles.models import Role
 from app.modules.users.models import User, UserProfile
 from app.modules.users.schemas import UserOut, UserRegisterRequest
 
@@ -45,6 +46,16 @@ def _extract_access_token(request: Request) -> str | None:
   return request.cookies.get("access_token")
 
 
+async def _get_role_or_error(db: DbSession, slug: str) -> Role:
+  role = await db.scalar(select(Role).where(Role.slug == slug))
+  if not role:
+    raise HTTPException(
+      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+      detail="role_not_configured",
+    )
+  return role
+
+
 @router.get("/")
 async def root():
   return ResponseUtils.success("ok")
@@ -59,10 +70,13 @@ async def register_user(
   if existing_user:
     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username_taken")
 
+  default_role = await _get_role_or_error(db, "student")
+
   user = User(
     username=payload.username,
     email=payload.email,
     hashed_password=hash_password(payload.password),
+    role=default_role,
   )
   profile = UserProfile(
     user=user,
@@ -211,7 +225,11 @@ async def get_current_user(
       status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_subject"
     ) from None
 
-  user = await db.scalar(select(User).options(selectinload(User.profile)).where(User.id == user_id))
+  user = await db.scalar(
+    select(User)
+    .options(selectinload(User.profile), selectinload(User.role))
+    .where(User.id == user_id)
+  )
 
   if not user or not user.is_active:
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_inactive")
@@ -223,7 +241,7 @@ async def get_current_user(
     is_active=user.is_active,
     is_verified=user.is_verified,
     must_change_password=user.must_change_password,
-    role=user.role.value if hasattr(user.role, "value") else str(user.role),
+    role=user.role.slug if user.role else None,
     created_at=user.created_at,
     updated_at=user.updated_at,
     last_login=user.last_login,

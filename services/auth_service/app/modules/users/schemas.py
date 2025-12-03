@@ -21,7 +21,7 @@ class UserOut(BaseModel):
   is_verified: bool
   must_change_password: bool
 
-  role: str
+  role: str | None = None
 
   created_at: datetime | None = None
   updated_at: datetime | None = None

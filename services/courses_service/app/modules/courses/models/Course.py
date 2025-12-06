@@ -6,8 +6,8 @@ from sqlalchemy import Enum, DateTime, Column,String,Text,ForeignKey,Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from Base import Base
-from services.courses_service.app.modules.courses.enums import CourseLevel
+from .Base import Base
+from app.modules.courses.enums import CourseLevel
 
 
 class Course(Base):
@@ -24,6 +24,6 @@ class Course(Base):
     create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     update_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    author = relationship("User", backref="courses")
-    lesson = relationship("Lesson", back_populates="courses", cascade="all, delete-orphan")
-    course_review = relationship("CourseReview", back_populates="courses", cascade="all, delete-orphan")
+    author = relationship("User", back_populates="course")
+    lesson = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
+    reviews = relationship("CourseReview", back_populates="course", cascade="all, delete-orphan")

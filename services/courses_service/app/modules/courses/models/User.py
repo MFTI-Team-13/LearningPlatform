@@ -1,11 +1,11 @@
-from sqlalchemy import Column, String, DateTime, Enum
+from sqlalchemy import Column, String, DateTime, Enum,Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 
-from Base import Base
-from services.courses_service.app.modules.courses.enums import UserRole
+from .Base import Base
+from app.modules.courses.enums import UserRole
 
 
 class User(Base):
@@ -19,4 +19,4 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     delete_flg = Column(Boolean, nullable=False, default=False)
 
-    course = relationship("Course", back_populates="users", cascade="all, delete-orphan")
+    course = relationship("Course", back_populates="author", cascade="all, delete-orphan")

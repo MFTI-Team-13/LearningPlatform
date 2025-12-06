@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator, ConfigDict, model_validator
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from services.courses_service.app.modules.courses.enums import UserRole
+from app.modules.courses.enums import UserRole
 
 
 class UserBase(BaseModel):

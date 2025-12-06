@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator, ConfigD
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
-from services.courses_service.app.modules.courses.enums import ContentType
+from app.modules.courses.enums import ContentType
 
 
 class LessonBase(BaseModel):

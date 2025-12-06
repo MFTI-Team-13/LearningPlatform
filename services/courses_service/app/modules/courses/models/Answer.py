@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Column, Text, Boolean, Integer, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from Base import Base
+from .Base import Base
 
 
 class Answer(Base):
@@ -18,7 +18,7 @@ class Answer(Base):
   is_correct = Column(Boolean, nullable=False, default=False)
   order_index = Column(Integer, nullable=False, default=0)
 
-  question = relationship("Question", back_populates="answers")
+  question = relationship("Question", back_populates="answer")
 
   __table_args__ = (
     UniqueConstraint('question_id', 'order_index', name='uq_answer_order_per_question'),

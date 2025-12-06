@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, Text, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from Base import Base
+from .Base import Base
 
 
 class CourseReview(Base):

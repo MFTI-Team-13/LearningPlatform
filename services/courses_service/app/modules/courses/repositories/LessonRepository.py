@@ -5,9 +5,9 @@ from fastapi import Depends
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.lesson import Lesson
-from enums.course_enums import ContentType
-from database import get_session
+from app.modules.courses.models_import import Lesson
+from app.modules.courses.enums import ContentType
+from app.common.db.session import get_session
 
 
 class LessonRepository:

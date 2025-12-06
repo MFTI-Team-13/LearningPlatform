@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional, List
 from uuid import UUID
-from app.modules.courses.enums.question_type import QuestionType
+from app.modules.courses.enums import QuestionType
 
 
 class QuestionBase(BaseModel):

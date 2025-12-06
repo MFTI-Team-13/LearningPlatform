@@ -5,8 +5,8 @@ from fastapi import Depends
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.test import Test
-from database import get_session
+from app.modules.courses.models_import import Test
+from app.common.db.session import get_session
 
 
 class TestRepository:

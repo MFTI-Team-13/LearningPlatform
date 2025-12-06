@@ -3,6 +3,8 @@ import os
 from fastapi import FastAPI
 
 from app.api.main_router import main_router
+from app.common.db.session import engine
+from app.common.db.base import Base
 
 
 def try_pycharm_attach() -> None:
@@ -38,6 +40,13 @@ def create_app() -> FastAPI:
     try_pycharm_attach()
 
   # app.add_event_handler("startup", _startup_attach)
+
+  async def on_startup():
+    async with engine.begin() as conn:
+      await conn.run_sync(Base.metadata.create_all)
+    print("[DB] ✅ Tables created or already exist.")
+
+  app.add_event_handler("startup", on_startup)
 
   app.include_router(main_router)
   return app

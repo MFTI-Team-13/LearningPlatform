@@ -1,6 +1,3 @@
 
-from sqlalchemy.orm import DeclarativeBase
+from app.common.db.base import Base
 
-
-class Base(DeclarativeBase):
-  pass

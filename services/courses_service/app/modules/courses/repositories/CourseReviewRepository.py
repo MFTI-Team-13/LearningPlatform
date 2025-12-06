@@ -5,8 +5,8 @@ from fastapi import Depends
 from sqlalchemy import select, and_, or_, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.course_review import CourseReview
-from database import get_session
+from app.modules.courses.models_import import CourseReview
+from app.common.db.session import get_session
 
 
 class CourseReviewRepository:

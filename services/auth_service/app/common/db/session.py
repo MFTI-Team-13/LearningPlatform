@@ -1,10 +1,12 @@
-from app.core.config import settings
 from sqlalchemy.ext.asyncio import (
   AsyncEngine,
   AsyncSession,
   async_sessionmaker,
   create_async_engine,
 )
+
+from app.common.db import models_registry  # noqa: F401
+from app.core.config import settings
 
 engine: AsyncEngine = create_async_engine(settings.db_dsn, pool_pre_ping=False)
 

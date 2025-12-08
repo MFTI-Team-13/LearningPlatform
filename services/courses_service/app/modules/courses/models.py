@@ -1,11 +1,71 @@
-from .models import Course, CourseReview, Lesson, Test, Question, Answer, User
+from __future__ import annotations
 
-__all__ = [
-    'Course',
-    'CourseReview',
-    'Lesson',
-    'Test',
-    'Question',
-    'Answer',
-    'User'
-]
+import uuid
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func, text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.common.db.base import Base
+
+if TYPE_CHECKING:
+  from app.modules.auth.models import RefreshToken
+  from app.modules.roles.models import Role
+
+
+class User(Base):
+  __tablename__ = "users"
+
+  id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  username: Mapped[str] = mapped_column(String(150), unique=True, nullable=False, index=True)
+  email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+  hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+  role_id: Mapped[uuid.UUID] = mapped_column(
+    PGUUID(as_uuid=True), ForeignKey("roles.id"), nullable=False, index=True
+  )
+  is_active: Mapped[bool] = mapped_column(
+    Boolean, nullable=False, default=True, server_default=text("true")
+  )
+  is_verified: Mapped[bool] = mapped_column(
+    Boolean, nullable=False, default=False, server_default=text("false")
+  )
+  must_change_password: Mapped[bool] = mapped_column(
+    Boolean, nullable=False, default=False, server_default=text("false")
+  )
+  created_at: Mapped[datetime] = mapped_column(
+    DateTime(timezone=True), server_default=func.now(), nullable=False
+  )
+  updated_at: Mapped[datetime] = mapped_column(
+    DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+  )
+  last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+  profile: Mapped[UserProfile] = relationship("UserProfile", back_populates="user", uselist=False)
+  role: Mapped[Role] = relationship("Role", back_populates="users")
+  refresh_tokens: Mapped[list[RefreshToken]] = relationship("RefreshToken", back_populates="user")
+
+  def __repr__(self) -> str:
+    return f"User(id={self.id}, username={self.username!r}, role_id={self.role_id})"
+
+
+class UserProfile(Base):
+  __tablename__ = "user_profiles"
+
+  id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  user_id: Mapped[uuid.UUID] = mapped_column(
+    ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
+  )
+  first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+  last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+  middle_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+  created_at: Mapped[datetime] = mapped_column(
+    DateTime(timezone=True), server_default=func.now(), nullable=False
+  )
+  updated_at: Mapped[datetime] = mapped_column(
+    DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+  )
+
+  user: Mapped[User] = relationship("User", back_populates="profile")

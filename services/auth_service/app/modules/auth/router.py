@@ -20,10 +20,10 @@ from app.core.security import (
   make_refresh_jwt,
   public_key_to_jwk_components,
   set_token_cookies,
-  verify_access_token,
   verify_password,
   verify_refresh_token,
 )
+from app.middleware.auth import AuthContext, current_auth
 from app.modules.auth.models import RefreshToken
 from app.modules.auth.schemas import ChangePasswordRequest, LoginRequest, RefreshRequest
 from app.modules.roles.models import Role
@@ -37,13 +37,6 @@ router = APIRouter()
 
 def _hash_refresh_token(raw: str) -> str:
   return hashlib.sha256(raw.encode()).hexdigest()
-
-
-def _extract_access_token(request: Request) -> str | None:
-  auth_header = request.headers.get("authorization")
-  if auth_header and auth_header.lower().startswith("bearer "):
-    return auth_header.split(" ", 1)[1].strip()
-  return request.cookies.get("access_token")
 
 
 async def _get_role_or_error(db: DbSession, slug: str) -> Role:
@@ -220,29 +213,13 @@ async def refresh_tokens(
 
 @router.get("/me")
 async def get_current_user(
-  request: Request,
   db: DbSession,
+  auth: Annotated[AuthContext, Depends(current_auth)],
 ):
-  raw_access = _extract_access_token(request)
-  if not raw_access:
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="access_required")
-
-  try:
-    claims = verify_access_token(raw_access)
-  except TokenError as exc:
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
-
-  try:
-    user_id = uuid.UUID(claims.get("sub", ""))
-  except (TypeError, ValueError):
-    raise HTTPException(
-      status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_subject"
-    ) from None
-
   user = await db.scalar(
     select(User)
     .options(selectinload(User.profile), selectinload(User.role))
-    .where(User.id == user_id)
+    .where(User.id == auth.user_id)
   )
 
   if not user or not user.is_active:
@@ -269,27 +246,10 @@ async def get_current_user(
 @router.post("/change-password")
 async def change_password(
   payload: ChangePasswordRequest,
-  request: Request,
   db: DbSession,
+  auth: Annotated[AuthContext, Depends(current_auth)],
 ):
-  raw_access = _extract_access_token(request)
-  if not raw_access:
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="access_required")
-
-  try:
-    claims = verify_access_token(raw_access)
-  except TokenError as exc:
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
-
-  try:
-    user_id = uuid.UUID(claims.get("sub", ""))
-  except (TypeError, ValueError):
-    raise HTTPException(
-      status_code=status.HTTP_401_UNAUTHORIZED,
-      detail="invalid_subject",
-    ) from None
-
-  user = await db.get(User, user_id)
+  user = await db.get(User, auth.user_id)
   if not user or not user.is_active:
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_inactive")
 

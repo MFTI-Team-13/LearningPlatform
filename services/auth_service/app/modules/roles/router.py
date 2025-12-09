@@ -17,7 +17,7 @@ from app.modules.users.models import User
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
-router = APIRouter(dependencies=[Depends(require_roles("admin"))])
+router = APIRouter()
 
 
 def _serialize_role(role: Role) -> dict:
@@ -53,7 +53,7 @@ async def list_roles(db: DbSession):
   )
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles("admin"))])
 async def create_role(payload: RoleCreate, db: DbSession):
   role = Role(
     slug=_get_slug(payload.slug) or payload.slug,
@@ -87,7 +87,7 @@ async def get_role(role_id: str, db: DbSession):
   return ResponseUtils.success(role=_serialize_role(role))
 
 
-@router.patch("/{role_id}")
+@router.patch("/{role_id}", dependencies=[Depends(require_roles("admin"))])
 async def update_role(role_id: str, payload: RoleUpdate, db: DbSession):
   role = await _get_role_or_404(role_id, db)
 
@@ -110,7 +110,7 @@ async def update_role(role_id: str, payload: RoleUpdate, db: DbSession):
   return ResponseUtils.success(role=_serialize_role(role))
 
 
-@router.delete("/{role_id}")
+@router.delete("/{role_id}", dependencies=[Depends(require_roles("admin"))])
 async def delete_role(role_id: str, db: DbSession):
   role = await _get_role_or_404(role_id, db)
 

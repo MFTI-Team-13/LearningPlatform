@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from learning_platform_common.utils import ResponseUtils

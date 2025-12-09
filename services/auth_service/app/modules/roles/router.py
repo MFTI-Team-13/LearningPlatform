@@ -10,13 +10,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.db.session import get_db
+from app.middleware.auth import require_roles
 from app.modules.roles.models import Role
 from app.modules.roles.schemas import RoleCreate, RoleOut, RoleUpdate
 from app.modules.users.models import User
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_roles("admin"))])
 
 
 def _serialize_role(role: Role) -> dict:

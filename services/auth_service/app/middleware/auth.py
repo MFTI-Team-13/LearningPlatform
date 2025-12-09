@@ -104,7 +104,7 @@ def current_auth(request: Request) -> AuthContext:
 
 
 def require_roles(*roles: str):
-  async def _checker(ctx: AuthContext = Depends(current_auth)) -> AuthContext:
+  async def _checker(ctx: Annotated[AuthContext, Depends(current_auth)]) -> AuthContext:
     if roles and ctx.role not in roles:
       raise HTTPException(status_code=403, detail="forbidden")
     return ctx

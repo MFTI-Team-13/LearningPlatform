@@ -49,11 +49,6 @@ async def _get_role_or_error(db: DbSession, slug: str) -> Role:
   return role
 
 
-@router.get("/")
-async def root():
-  return ResponseUtils.success("ok")
-
-
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(
   payload: UserRegisterRequest,

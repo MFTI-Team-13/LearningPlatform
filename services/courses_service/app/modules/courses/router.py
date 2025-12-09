@@ -32,13 +32,13 @@ async def create_course(
 ):
     try:
         # -------- Проверка: существует ли пользователь-автор --------
-        author = await users.get_by_id(data.author_id)
+        '''author = await users.get_by_id(data.author_id)
         if not author:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Автор не найден"
             )
-
+        '''
         # -------- Создание курса --------
         course = await courses.create(data)
         return course

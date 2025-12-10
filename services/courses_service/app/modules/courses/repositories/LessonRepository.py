@@ -1,5 +1,6 @@
 from typing import Optional, List
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import Depends
 from sqlalchemy import select, and_, or_, func
@@ -14,9 +15,14 @@ class LessonRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, lesson_id: UUID) -> Optional[Lesson]:
+    async def get_by_id(self, id: UUID, delete_flg:bool = True) -> Optional[Lesson]:
         result = await self.db.execute(
-            select(Lesson).where(Lesson.id == lesson_id)
+            select(Lesson).where(
+                and_(
+                  Lesson.id == id,
+                  Lesson.delete_flg == delete_flg
+                )
+            )
         )
         return result.scalar_one_or_none()
 
@@ -67,6 +73,7 @@ class LessonRepository:
             if hasattr(lesson, key):
                 setattr(lesson, key, value)
 
+        lesson.updated_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(lesson)
         return lesson
@@ -78,6 +85,7 @@ class LessonRepository:
             return False
 
         lesson.delete_flg = True
+        lesson.updated_at = datetime.utcnow()
         await self.db.commit()
         return True
 

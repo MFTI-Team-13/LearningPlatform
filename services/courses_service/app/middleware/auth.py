@@ -38,8 +38,8 @@ def _get_jwks_client() -> jwt.PyJWKClient:
 
 def _extract_bearer_token(request: Request) -> str | None:
   auth_header = request.headers.get("authorization")
-  if auth_header and auth_header.lower().startswith("bearer "):
-    res = auth_header.split(" ", 1)[1].strip()
+  if auth_header:# and auth_header.lower().startswith("bearer "):
+    res = auth_header#.split(" ", 1)[1].strip()
     print(res)
     return res
   return request.cookies.get("access_token")

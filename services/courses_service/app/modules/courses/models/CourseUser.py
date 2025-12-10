@@ -15,7 +15,7 @@ class CourseUser(Base):
   course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
   user_id = Column(UUID(as_uuid=True), nullable=False)
   is_active = Column(Boolean, nullable=False, default = True)
-
+  delete_flg = Column(Boolean, nullable=False, default=False)
   create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
   update_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

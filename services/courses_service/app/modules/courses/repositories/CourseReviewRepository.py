@@ -1,5 +1,6 @@
 from typing import Optional, List, Tuple
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import Depends
 from sqlalchemy import select, and_, or_, func, case
@@ -13,9 +14,14 @@ class CourseReviewRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, review_id: UUID) -> Optional[CourseReview]:
+    async def get_by_id(self, id: UUID, delete_flg:bool = True) -> Optional[CourseReview]:
         result = await self.db.execute(
-            select(CourseReview).where(CourseReview.id == review_id)
+            select(CourseReview).where(
+                and_(
+                    CourseReview.id == id,
+                    CourseReview.delete_flg == delete_flg
+                )
+            )
         )
         return result.scalar_one_or_none()
 
@@ -87,15 +93,27 @@ class CourseReviewRepository:
             if hasattr(review, key):
                 setattr(review, key, value)
 
+        review.updated_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(review)
         return review
 
-    async def delete(self, review_id: UUID) -> bool:
+    async def soft_delete(self, review_id: UUID) -> bool:
         review = await self.get_by_id(review_id)
 
         if not review:
-            return False
+          return False
+
+        review.delete_flg = True
+        review.updated_at = datetime.utcnow()
+        await self.db.commit()
+        return True
+
+    async def hard_delete(self, review_id: UUID) -> bool:
+        review = await self.get_by_id(review_id)
+
+        if not review:
+          return False
 
         await self.db.delete(review)
         await self.db.commit()

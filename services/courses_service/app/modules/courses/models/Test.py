@@ -23,6 +23,7 @@ class Test(Base):
   description = Column(Text)
   is_active = Column(Boolean, nullable=False, default=True)
 
+  delete_flg = Column(Boolean, nullable=False, default=False)
   created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
   update_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 

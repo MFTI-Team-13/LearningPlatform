@@ -1,5 +1,6 @@
 from typing import Optional, List
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import Depends
 from sqlalchemy import select, and_, or_, func
@@ -14,9 +15,14 @@ class QuestionRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, question_id: UUID) -> Optional[Question]:
+    async def get_by_id(self, id: UUID, delete_flg:bool = True) -> Optional[Question]:
         result = await self.db.execute(
-            select(Question).where(Question.id == question_id)
+            select(Question).where(
+              and_(
+                Question.id == id,
+                Question.delete_flg == delete_flg
+              )
+            )
         )
         return result.scalar_one_or_none()
 
@@ -78,19 +84,31 @@ class QuestionRepository:
             if hasattr(question, key):
                 setattr(question, key, value)
 
+        question.updated_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(question)
         return question
 
+    async def soft_delete(self, question_id: UUID) -> bool:
+      question = await self.get_by_id(question_id)
+
+      if not question:
+        return False
+
+      question.delete_flg = True
+      question.updated_at = datetime.utcnow()
+      await self.db.commit()
+      return True
+
     async def hard_delete(self, question_id: UUID) -> bool:
-        question = await self.get_by_id(question_id)
+      question = await self.get_by_id(question_id)
 
-        if not question:
-            return False
+      if not question:
+        return False
 
-        await self.db.delete(question)
-        await self.db.commit()
-        return True
+      await self.db.delete(question)
+      await self.db.commit()
+      return True
 
     async def get_max_order_index(self, test_id: UUID) -> int:
         result = await self.db.execute(

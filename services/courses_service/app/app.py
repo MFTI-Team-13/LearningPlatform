@@ -1,6 +1,8 @@
 import os
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.api.main_router import main_router
 from app.common.db.session import engine
@@ -48,7 +50,24 @@ def create_app() -> FastAPI:
       await conn.run_sync(Base.metadata.create_all)
     print("[DB] ✅ Tables created or already exist.")
 
+  async def course_validation_handler(request, exc: RequestValidationError):
+    errors = exc.errors()
+
+    for err in errors:
+      if err["type"] == "value_error":
+        msg = err.get("msg", "Некорректные данные")
+        return JSONResponse(
+          status_code=422,
+          content={"detail": msg}
+        )
+
+    return JSONResponse(
+      status_code=422,
+      content={"detail": errors}
+    )
+
   app.add_event_handler("startup", on_startup)
+  app.add_exception_handler(RequestValidationError, course_validation_handler)
   setup_auth_middleware(app)
   app.include_router(main_router)
   return app

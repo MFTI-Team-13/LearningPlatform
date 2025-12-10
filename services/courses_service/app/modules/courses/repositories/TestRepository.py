@@ -13,9 +13,14 @@ class TestRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, test_id: UUID) -> Optional[Test]:
+    async def get_by_id(self, id: UUID, delete_flg:bool = True) -> Optional[Test]:
         result = await self.db.execute(
-            select(Test).where(Test.id == test_id)
+            select(Test).where(
+                and_(
+                  Test.id == id,
+                  Test.delete_flg == delete_flg
+                )
+            )
         )
 
         return result.scalar_one_or_none()
@@ -64,19 +69,31 @@ class TestRepository:
             if hasattr(test, key):
                 setattr(test, key, value)
 
+        test.updated_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(test)
         return test
 
+    async def soft_delete(self, test_id: UUID) -> bool:
+      test = await self.get_by_id(test_id)
+
+      if not test:
+        return False
+
+      test.delete_flg = True
+      test.updated_at = datetime.utcnow()
+      await self.db.commit()
+      return True
+
     async def hard_delete(self, test_id: UUID) -> bool:
-        test = await self.get_by_id(test_id)
+      test = await self.get_by_id(test_id)
 
-        if not test:
-            return False
+      if not test:
+        return False
 
-        await self.db.delete(test)
-        await self.db.commit()
-        return True
+      await self.db.delete(test)
+      await self.db.commit()
+      return True
 
     async def activate(self, test_id: UUID) -> bool:
         test = await self.get_by_id(test_id)

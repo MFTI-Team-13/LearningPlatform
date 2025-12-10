@@ -1,6 +1,14 @@
 from fastapi import HTTPException, status
 import logging
 
+logger = logging.getLogger(__name__)
+
+
+class ServiceError(Exception):
+    def __init__(self, status_code: int, detail: str):
+      self.detail = detail
+      self.status_code = status_code
+      super().__init__(detail)
 
 class NotFoundError(HTTPException):
     def __init__(self, detail="Ресурс не найден"):
@@ -9,7 +17,7 @@ class NotFoundError(HTTPException):
 
 class AlreadyExistsError(HTTPException):
     def __init__(self, detail="Запись уже существует"):
-        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+        super().__init__(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
 
 class ConflictError(HTTPException):
@@ -22,27 +30,12 @@ class ForbiddenError(HTTPException):
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
-logger = logging.getLogger(__name__)
-
-
 async def handle_errors(func):
     try:
         return await func()
 
-    except NotFoundError as e:
-        logger.warning(f"[NOT FOUND] {e.detail}")
-        raise e
-
-    except AlreadyExistsError as e:
-        logger.warning(f"[ALREADY EXISTS] {e.detail}")
-        raise e
-
-    except ConflictError as e:
-        logger.warning(f"[CONFLICT] {e.detail}")
-        raise e
-
-    except ForbiddenError as e:
-        logger.warning(f"[FORBIDDEN] {e.detail}")
+    except (NotFoundError, AlreadyExistsError, ConflictError, ForbiddenError) as e:
+        logger.warning(f"[{e.__class__.__name__.upper()}] {e.detail}")
         raise e
 
     except HTTPException as e:
@@ -55,4 +48,3 @@ async def handle_errors(func):
             status_code=500,
             detail="Произошла непредвиденная ошибка сервера."
         )
-

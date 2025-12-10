@@ -14,9 +14,14 @@ class CourseUserRepository:
   def __init__(self, db: AsyncSession):
     self.db = db
 
-  async def get_by_id(self, id: UUID) -> Optional[CourseUser]:
+  async def get_by_id(self, id: UUID, delete_flg:bool = True) -> Optional[CourseUser]:
     result = await self.db.execute(
-      select(CourseUser).where(CourseUser.id == id)
+      select(CourseUser).where(
+        and_(
+          CourseUser.id == id,
+          CourseUser.delete_flg == delete_flg
+        )
+      )
     )
     return result.scalar_one_or_none()
 
@@ -76,8 +81,21 @@ class CourseUserRepository:
     await self.db.refresh(course_student)
     return course_student
 
-  async def hard_delete(self, id: UUID) -> bool:
-    course_student = await self.get_by_id(id)
+  async def soft_delete(self, course_student_id: UUID) -> bool:
+    course_student = await self.get_by_id(course_student_id)
+
+    if not course_student:
+      return False
+
+    course_student.delete_flg = True
+    course_student.updated_at = datetime.utcnow()
+
+    await self.db.commit()
+    return True
+
+  async def hard_delete(self, course_student_id: UUID) -> bool:
+    course_student = await self.get_by_id(course_student_id)
+
     if not course_student:
       return False
 

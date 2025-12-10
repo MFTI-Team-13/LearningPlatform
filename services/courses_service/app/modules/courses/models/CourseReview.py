@@ -18,7 +18,7 @@ class CourseReview(Base):
   rating = Column(Integer, nullable=False)
   comment = Column(Text)
   is_published = Column(Boolean, nullable=False, default=True)
-
+  delete_flg = Column(Boolean, nullable=False, default=False)
   created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
   updated_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
 

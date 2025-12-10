@@ -1,6 +1,6 @@
 import uuid
-
-from sqlalchemy import Column, Text, Integer, Enum, ForeignKey, UniqueConstraint
+from datetime import datetime
+from sqlalchemy import Column, Text, Integer,Boolean, DateTime, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -25,6 +25,10 @@ class Question(Base):
   question_type = Column(Enum(QuestionType), nullable=False)
   order_index = Column(Integer, nullable=False, default=0)
   score = Column(Integer, nullable=False, default=1)  # Баллы за вопрос
+
+  delete_flg = Column(Boolean, nullable=False, default=False)
+  created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+  update_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
   test = relationship("Test", back_populates="question")
   answer = relationship("Answer", back_populates="question", cascade="all, delete-orphan")

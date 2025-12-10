@@ -1,5 +1,6 @@
 from typing import Any, Optional, List
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import Depends
 from sqlalchemy import select, and_, or_
@@ -14,37 +15,30 @@ class CourseRepository:
   def __init__(self, db: AsyncSession):
     self.db = db
 
-  async def get_by_id(self, course_id: UUID) -> Optional[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                  Course.id == course_id,
-                  Course.delete_flg == False
-              )
-          )
-      )
+  async def get_by_id(self, id: UUID, delete_flg:bool) -> Optional[Course]:
+      query = select(Course).where(Course.id == id)
+
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
+
+      result = await self.db.execute(query)
+
       return result.scalar_one_or_none()
 
-  async def get_by_title(self, title: str) -> Optional[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                Course.title == title,
-                Course.delete_flg == False
-              )
-          )
-       )
+  async def get_by_title(self, title: str,delete_flg:bool) -> Optional[Course]:
+      query = select(Course).where(Course.title == title)
+
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
+
+      result = await self.db.execute(query)
       return result.scalar_one_or_none()
 
-  async def exists_by_title(self, title: str) -> bool:
-      course = await self.get_by_title(title)
-      return course is not None
-
-  async def get_all(self,skip: int = 0,limit: int = 100,include_deleted: bool = False) -> List[Course]:
+  async def get_all(self,delete_flg: bool, skip: int = 0,limit: int = 100) -> List[Course]:
       query = select(Course)
-
-      if not include_deleted:
-          query = query.where(Course.delete_flg == False)
+      print(delete_flg)
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
 
       query = query.offset(skip).limit(limit)
 
@@ -99,7 +93,7 @@ class CourseRepository:
       return course
 
   async def update(self, course_id: UUID, course_data: dict) -> Optional[Course]:
-      course = await self.get_by_id(course_id)
+      course = await self.get_by_id(course_id,False)
 
       if not course:
           return None
@@ -114,7 +108,7 @@ class CourseRepository:
       return course
 
   async def soft_delete(self, course_id: UUID) -> bool:
-      course = await self.get_by_id(course_id)
+      course = await self.get_by_id(course_id, delete_flg = False)
 
       if not course:
           return False
@@ -124,7 +118,7 @@ class CourseRepository:
       return True
 
   async def hard_delete(self, course_id: UUID) -> bool:
-      course = await self.get_by_id(course_id)
+      course = await self.get_by_id(course_id, None)
 
       if not course:
           return False

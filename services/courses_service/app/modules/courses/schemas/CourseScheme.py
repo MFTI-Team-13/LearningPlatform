@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
-from typing import Optional
+from typing import Optional,List
 from uuid import UUID
 from datetime import datetime
 from app.modules.courses.enums import CourseLevel
+from app.modules.courses.schemas.LessonScheme import LessonResponse
 
 
 class CourseBase(BaseModel):
@@ -61,3 +62,6 @@ class CourseResponse(BaseModel):
   delete_flg: bool
   create_at: datetime
   update_at: datetime
+
+class CourseWithLessonsResponse(CourseResponse):
+  lessons: List['LessonResponse'] = Field(default_factory=list, description="Уроки")

@@ -36,10 +36,10 @@ class BaseService:
         return await self.repo.update(id, update_dict)
 
     async def soft_delete(self, id: UUID):
-        course = await self.get_by_id(id, None)
+        obj = await self.get_by_id(id, None)
 
-        if course.delete_flg:
-            raise ConflictError("Курс уже удалён (soft delete)")
+        if obj.delete_flg:
+            raise ConflictError("Объект уже удалён (soft delete)")
 
         return await self.repo.soft_delete(id)
 

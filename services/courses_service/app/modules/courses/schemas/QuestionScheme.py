@@ -1,8 +1,9 @@
-# app/schemas/question.py
+
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional, List
 from uuid import UUID
 from app.modules.courses.enums import QuestionType
+from datetime import datetime
 
 
 class QuestionBase(BaseModel):
@@ -10,7 +11,7 @@ class QuestionBase(BaseModel):
 
   text: str = Field(..., min_length=5, max_length=2000, description="Текст вопроса")
   question_type: QuestionType = Field(..., description="Тип вопроса")
-  order_index: int = Field(..., ge=1, le=100, description="Порядковый номер")
+  order_index: int = Field(..., ge=0, le=100, description="Порядковый номер")
   score: int = Field(..., ge=1, le=100, description="Баллы за вопрос")
 
   @field_validator('text')
@@ -46,7 +47,7 @@ class QuestionUpdate(BaseModel):
 
   text: Optional[str] = Field(None, min_length=10, max_length=2000)
   question_type: Optional[QuestionType] = None
-  order_index: Optional[int] = Field(None, ge=1, le=100)
+  order_index: Optional[int] = Field(None, ge=0, le=100)
   score: Optional[int] = Field(None, ge=1, le=100)
 
   @model_validator(mode='after')
@@ -70,6 +71,9 @@ class QuestionResponse(BaseModel):
   order_index: int
   score: int
   test_id: UUID
+  delete_flg:bool
+  created_at: datetime
+  update_at: datetime
 
 
 class QuestionWithTest(QuestionResponse):

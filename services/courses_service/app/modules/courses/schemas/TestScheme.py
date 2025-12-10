@@ -48,6 +48,7 @@ class TestResponse(BaseModel):
   title: str
   description: Optional[str]
   is_active: bool
+  delete_flg:bool
   created_at: datetime
   update_at: datetime
   lesson_id: UUID

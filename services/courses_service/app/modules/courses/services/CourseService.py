@@ -34,25 +34,29 @@ class CourseService(BaseService):
 
         return res
 
-    async def get_by_author(self, author_id: UUID, skip: int, limit: int):
-        return await self.repo.get_by_author(author_id, skip, limit)
-
-    async def get_by_level(self, level: str, skip: int, limit: int):
-        return await self.repo.get_by_level(level, skip, limit)
-
-    async def get_published(self, skip: int, limit: int):
-        return await self.repo.get_published(skip, limit)
-
-    async def get_with_lessons(self, course_id: UUID):
-        res = await self.repo.get_with_lessons(course_id)
+    async def get_by_author(self, author_id: UUID,delete_flg:bool, skip: int, limit: int):
+        res = await self.repo.get_by_author(author_id, delete_flg, skip, limit)
 
         if not res:
-            raise NotFoundError("Курс не найден или уроки отсутствуют")
+            raise NotFoundError(f"Объекты не найдены")
 
         return res
 
-    async def count(self) -> int:
-        return await self.repo.count()
+    async def get_by_level(self, level: str,delete_flg:bool,skip: int, limit: int):
+        res = await self.repo.get_by_level(level,delete_flg, skip, limit)
+
+        if not res:
+          raise NotFoundError(f"Объекты уровня '{level}' не найдены")
+
+        return res
+
+    async def get_published(self, delete_flg:bool, skip: int, limit: int):
+        res = await self.repo.get_published(delete_flg, skip, limit)
+
+        if not res:
+          raise NotFoundError("Опубликованные объекты не найдены")
+
+        return res
 
 
     async def update(self, id: UUID, in_data: CourseUpdate) -> CourseResponse:
@@ -64,12 +68,11 @@ class CourseService(BaseService):
 
         return await super().update(id, in_data)
 
-
-    # ----------------------------
-    # PUBLISH
-    # ----------------------------
     async def publish(self, id: UUID):
-        course = await self.get_by_id(id)
+        course = await self.get_by_id(id,None)
+
+        if course.delete_flg:
+          raise ConflictError("Нельзя опубликовать удалённый курс")
 
         if course.is_published:
             raise ConflictError("Курс уже опубликован")
@@ -77,12 +80,30 @@ class CourseService(BaseService):
         return await self.repo.publish(id)
 
     async def unpublish(self, id: UUID):
-        course = await self.get_by_id(id)
+        course = await self.get_by_id(id,None)
 
         if not course.is_published:
             raise ConflictError("Курс уже скрыт")
 
         return await self.repo.unpublish(id)
+
+    async def soft_delete(self, id: UUID):
+      course = await self.get_by_id(id, delete_flg=False)
+
+      if course.is_published:
+        await self.repo.unpublish(id)
+
+      return await super().soft_delete(id)
+
+    async def get_all_with_lessons(self, delete_flg: bool | None, skip: int, limit: int):
+      courses = await self.repo.get_all_with_lessons(delete_flg, skip, limit)
+
+      if not courses:
+        raise NotFoundError("Курсы не найдены")
+
+      return courses
+
+
 
 
 async def get_course_service(

@@ -1,71 +1,78 @@
-# services/lesson_service.py
-
 from fastapi import Depends, HTTPException, status
 from uuid import UUID
-from app.modules.courses.repositories_import import LessonRepository, get_lesson_repository
-from app.modules.courses.schemas.LessonScheme import LessonCreate, LessonUpdate
+from app.modules.courses.repositories_import import LessonRepository, get_lesson_repository,CourseRepository,get_course_repository
+from app.modules.courses.schemas_import import LessonCreate, LessonUpdate,LessonResponse
 from .BaseService import BaseService
+
+from app.modules.courses.exceptions import (
+    NotFoundError,
+    ConflictError
+)
 
 
 class LessonService(BaseService):
-
-    def __init__(self, repo: LessonRepository):
+    def __init__(self, repo: LessonRepository, course_repo: CourseRepository):
         super().__init__(repo)
-        self.repo: LessonRepository = repo
+        self.repo = repo
+        self.course_repo = course_repo
 
-    async def create(self, in_data: LessonCreate):
-        if in_data.order_index is None:
-            max_order = await self.repo.get_max_order_index(in_data.course_id)
-            in_data.order_index = (max_order or 0) + 1
+    async def create(self, in_data: LessonCreate) -> LessonResponse:
+        course = await self.course_repo.get_by_id(in_data.course_id, delete_flg=False)
+        if not course:
+            raise NotFoundError("Курс для урока не найден")
+
+        max_order = await self.repo.get_max_order_index(in_data.course_id,None)
+        in_data.order_index = max_order + 1
 
         return await super().create(in_data)
 
-    async def get_by_course_and_order(self, course_id: UUID, order_index: int):
-        lesson = await self.repo.get_by_course_and_order(course_id, order_index)
+    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int, limit: int):
+        lessons = await self.repo.get_by_course_id(course_id, delete_flg, skip, limit)
+
+        if not lessons:
+            raise NotFoundError("Уроки не найдены")
+
+        return lessons
+
+    async def get_by_course_and_order(self, course_id: UUID, order_index: int,delete_flg: bool | None):
+        lesson = await self.repo.get_by_course_and_order(course_id, order_index,delete_flg)
+
         if not lesson:
-            raise HTTPException(404, "Урок с таким порядком не найден")
+          raise NotFoundError("Урок с таким порядком не найден")
+
         return lesson
 
-    async def get_by_course_id(self, course_id: UUID, skip: int = 0, limit: int = 100):
-        res = await self.repo.get_by_course_id(course_id, skip, limit)
-        return res
+    async def get_by_content_type(self, content_type,delete_flg: bool, skip: int, limit: int):
+        lessons = await self.repo.get_by_content_type(content_type,delete_flg, skip, limit)
 
-    async def get_by_content_type(self, content_type, skip: int, limit: int):
-        return await self.repo.get_by_content_type(content_type, skip, limit)
+        if not lessons:
+            raise NotFoundError("Уроки не найдены")
 
-    async def get_max_order_index(self, course_id: UUID) -> int:
-        return await self.repo.get_max_order_index(course_id)
+        return lessons
 
-    async def search_in_course(self, course_id: UUID, query: str, skip: int, limit: int):
-        return await self.repo.search_in_course(course_id, query, skip, limit)
+    async def get_max_order_index(self, course_id: UUID, delete_flg: bool | None) -> int:
+        course = await self.course_repo.get_by_id(course_id, delete_flg=None)
+        if not course:
+           raise NotFoundError("Курс не найден")
 
-    async def count_by_course(self, course_id: UUID) -> int:
-        return await self.repo.count_by_course(course_id)
+        max_index = await self.repo.get_max_order_index(course_id, delete_flg)
 
-    async def reorder_lessons(self, course_id: UUID, new_order: list[UUID]):
-        if not new_order:
-            raise HTTPException(400, "Новый порядок уроков не может быть пустым")
+        if max_index == -1:
+          raise NotFoundError("У данного курса нет уроков")
 
-        lessons = await self.repo.get_by_course_id(course_id, skip=0, limit=5000)
-        lesson_ids = {lesson.id for lesson in lessons}
+        return max_index
 
-        for lid in new_order:
-            if lid not in lesson_ids:
-                raise HTTPException(
-                    status.HTTP_400_BAD_REQUEST,
-                    detail=f"Урок {lid} не принадлежит курсу {course_id}"
-                )
+    async def search_in_course(self, course_id: UUID, query: str,delete_flg: bool | None, skip: int, limit: int):
+        lessons = await self.repo.search_in_course(course_id,query,delete_flg, skip, limit)
 
-        return await self.repo.reorder_lessons(course_id, new_order)
+        if not lessons:
+            raise NotFoundError("Уроки не найдены")
 
-    async def soft_delete(self, id: UUID):
-        return await self.repo.soft_delete(id)
-
-    async def hard_delete(self, id: UUID):
-        return await self.repo.hard_delete(id)
+        return lessons
 
 
 async def get_lesson_service(
-    repo: LessonRepository = Depends(get_lesson_repository),
+  repo: LessonRepository = Depends(get_lesson_repository),
+  course_repo: CourseRepository = Depends(get_course_repository)
 ) -> LessonService:
-    return LessonService(repo)
+  return LessonService(repo, course_repo)

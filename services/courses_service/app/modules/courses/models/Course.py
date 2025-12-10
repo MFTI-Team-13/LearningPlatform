@@ -25,5 +25,5 @@ class Course(Base):
     update_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     courseUser = relationship("CourseUser", back_populates="courses", cascade="all, delete-orphan")
-    lesson = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
+    lesson = relationship("Lesson", back_populates="course",lazy="selectin", cascade="all, delete-orphan")
     reviews = relationship("CourseReview", back_populates="course", cascade="all, delete-orphan")

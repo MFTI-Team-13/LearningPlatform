@@ -8,7 +8,7 @@ from .schemas.UserScheme import *
 from .schemas.CourseUserScheme import *
 
 course_schemas = [
-    CourseBase, CourseCreate, CourseUpdate, CourseResponse
+    CourseBase, CourseCreate, CourseUpdate, CourseResponse,CourseWithLessonsResponse
 ]
 
 lesson_schemas = [

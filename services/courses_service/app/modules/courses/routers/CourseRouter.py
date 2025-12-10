@@ -7,10 +7,12 @@ from learning_platform_common.utils import ResponseUtils
 from app.modules.courses.schemas.CourseScheme import (
     CourseCreate,
     CourseUpdate,
-    CourseResponse
+    CourseResponse,
+    CourseWithLessonsResponse
 )
 from app.modules.courses.services_import import CourseService, get_course_service
 from app.modules.courses.exceptions import NotFoundError, AlreadyExistsError,handle_errors
+from app.modules.courses.enums import CourseLevel
 
 router = APIRouter(prefix="/course")
 
@@ -45,7 +47,6 @@ async def list_courses(
     limit: int = 20,
     service: CourseService = Depends(get_course_service),
 ):
-    print(delete_flg)
     return await handle_errors(lambda: service.get_all(delete_flg, skip, limit))
 
 @router.get("/auth", dependencies=[Depends(require_roles("admin", "teacher"))])
@@ -74,3 +75,56 @@ async def hard_delete_course(
     service: CourseService = Depends(get_course_service),
 ):
     return await handle_errors(lambda: service.hard_delete(course_id))
+
+@router.post("/getByAuthor", response_model=list[CourseResponse])
+async def get_by_author(
+    author_id: UUID,
+    delete_flg: bool | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    service: CourseService = Depends(get_course_service)
+):
+    return await handle_errors(lambda: service.get_by_author(author_id, delete_flg, skip, limit))
+
+@router.post("/getPublished", response_model=list[CourseResponse])
+async def get_published(
+    delete_flg: bool | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    service: CourseService = Depends(get_course_service),
+):
+    return await handle_errors(lambda: service.get_published(delete_flg,skip, limit))
+
+@router.post("/getByLevel", response_model=list[CourseResponse])
+async def get_by_level(
+    level: CourseLevel,
+    delete_flg: bool | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    service: CourseService = Depends(get_course_service),
+):
+    return await handle_errors(lambda: service.get_by_level(level,delete_flg, skip, limit))
+
+@router.put("/publish", response_model=CourseResponse)
+async def publish_course(
+    course_id: UUID,
+    service: CourseService = Depends(get_course_service),
+):
+    return await handle_errors(lambda: service.publish(course_id))
+
+@router.put("/unpublish", response_model=CourseResponse)
+async def unpublish_course(
+    course_id: UUID,
+    service: CourseService = Depends(get_course_service),
+):
+    return await handle_errors(lambda: service.unpublish(course_id))
+
+@router.get("/listWithLessons", response_model=List[CourseWithLessonsResponse])
+async def list_courses_with_lessons(
+    delete_flg: bool | None = None,
+    skip: int = 0,
+    limit: int = 50,
+    service: CourseService = Depends(get_course_service)
+):
+    return await handle_errors(lambda: service.get_all_with_lessons(delete_flg, skip, limit))
+

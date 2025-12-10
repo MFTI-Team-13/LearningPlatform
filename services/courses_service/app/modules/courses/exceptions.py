@@ -1,5 +1,7 @@
 from fastapi import HTTPException, status
 import logging
+from sqlalchemy.exc import IntegrityError
+import asyncpg
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,11 @@ async def handle_errors(func):
     except (NotFoundError, AlreadyExistsError, ConflictError, ForbiddenError) as e:
         logger.warning(f"[{e.__class__.__name__.upper()}] {e.detail}")
         raise e
-
+    except IntegrityError as e:
+        if isinstance(e.orig, asyncpg.exceptions.UniqueViolationError):
+            logger.warning("[UNIQUE VIOLATION] Нарушение уникальности")
+            raise ConflictError("Нарушение уникальности данных")
+        raise HTTPException(400, "Ошибка целостности данных")
     except HTTPException as e:
         logger.warning(f"[HTTP ERROR] {e.detail}")
         raise e

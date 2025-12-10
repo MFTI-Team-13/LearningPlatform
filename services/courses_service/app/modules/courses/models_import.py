@@ -4,7 +4,7 @@ from .models.Lesson import Lesson
 from .models.Test import Test
 from .models.Question import Question
 from .models.Answer import Answer
-from .models.User import User
+from .models.CourseUser import CourseUser
 
 
 
@@ -15,5 +15,5 @@ __all__ = [
     'Test',
     'Question',
     'Answer',
-    'User'
+    'CourseUser'
 ]

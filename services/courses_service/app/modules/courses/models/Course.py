@@ -17,13 +17,13 @@ class Course(Base):
     title = Column(String, nullable=False, unique=True)
     description = Column(Text)
     level = Column(Enum(CourseLevel), default=CourseLevel.BEGINNER)
-    author_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    author_id = Column(UUID(as_uuid=True), nullable=False)
 
     delete_flg = Column(Boolean, nullable=False, default=False)
     is_published = Column(Boolean, nullable=False, default=False)
     create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     update_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    author = relationship("User", back_populates="course")
+    courseUser = relationship("CourseUser", back_populates="courses", cascade="all, delete-orphan")
     lesson = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
     reviews = relationship("CourseReview", back_populates="course", cascade="all, delete-orphan")

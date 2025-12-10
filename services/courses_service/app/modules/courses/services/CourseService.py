@@ -33,6 +33,9 @@ class CourseService(BaseService):
     async def get_by_level(self, level: str, skip: int, limit: int):
         return await self.repo.get_by_level(level, skip, limit)
 
+    async def get_all(self, skip: int, limit: int, include_deleted: bool):
+        return await self.repo.get_all(skip, limit, include_deleted)
+
     async def get_published(self, skip: int, limit: int):
         return await self.repo.get_published(skip, limit)
 

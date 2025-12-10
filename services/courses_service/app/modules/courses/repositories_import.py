@@ -4,7 +4,7 @@ from  .repositories.TestRepository import TestRepository, get_test_repository
 from  .repositories.QuestionRepository import QuestionRepository, get_question_repository
 from  .repositories.AnswerRepository import AnswerRepository, get_answer_repository
 from  .repositories.CourseReviewRepository import CourseReviewRepository, get_course_review_repository
-from  .repositories.UserRepository import UserRepository, get_user_repository
+from  .repositories.CourseUserRepository import CourseUserRepository, get_course_user_repository
 
 
 __all__ = [
@@ -14,5 +14,5 @@ __all__ = [
 "QuestionRepository", "get_question_repository",
 "AnswerRepository", "get_answer_repository",
 "CourseReviewRepository", "get_course_review_repository",
-"UserRepository", "get_user_repository",
+"CourseUserRepository", "get_course_user_repository"
 ]

@@ -1,4 +1,3 @@
-# repositories/course_repository.py
 from typing import Any, Optional, List
 from uuid import UUID
 
@@ -109,6 +108,7 @@ class CourseRepository:
           if hasattr(course, key):
             setattr(course, key, value)
 
+      course.updated_at = datetime.utcnow()
       await self.db.commit()
       await self.db.refresh(course)
       return course

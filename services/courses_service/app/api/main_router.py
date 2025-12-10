@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.modules.courses.router import router as courses_router
+from app.modules.courses.routers.CourseRouter import router as courses_router
 
 main_router = APIRouter()
 

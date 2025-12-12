@@ -59,6 +59,8 @@ services:
     depends_on:
       db_courses:
         condition: service_healthy
+      auth_service:
+        condition: service_started
     env_file:
       - ./secrets/courses_service.env
     volumes:

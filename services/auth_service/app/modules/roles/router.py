@@ -10,7 +10,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.db.session import get_db
-from app.middleware.auth import require_roles
 from app.modules.roles.models import Role
 from app.modules.roles.schemas import RoleCreate, RoleOut, RoleUpdate
 from app.modules.users.models import User
@@ -53,7 +52,7 @@ async def list_roles(db: DbSession):
   )
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles("admin"))])
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_role(payload: RoleCreate, db: DbSession):
   role = Role(
     slug=_get_slug(payload.slug) or payload.slug,
@@ -87,7 +86,7 @@ async def get_role(role_id: str, db: DbSession):
   return ResponseUtils.success(role=_serialize_role(role))
 
 
-@router.patch("/{role_id}", dependencies=[Depends(require_roles("admin"))])
+@router.patch("/{role_id}")
 async def update_role(role_id: str, payload: RoleUpdate, db: DbSession):
   role = await _get_role_or_404(role_id, db)
 
@@ -110,7 +109,7 @@ async def update_role(role_id: str, payload: RoleUpdate, db: DbSession):
   return ResponseUtils.success(role=_serialize_role(role))
 
 
-@router.delete("/{role_id}", dependencies=[Depends(require_roles("admin"))])
+@router.delete("/{role_id}")
 async def delete_role(role_id: str, db: DbSession):
   role = await _get_role_or_404(role_id, db)
 

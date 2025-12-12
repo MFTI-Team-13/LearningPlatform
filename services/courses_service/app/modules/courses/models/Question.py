@@ -1,11 +1,12 @@
-import uuid
+from datetime import datetime
 
-from sqlalchemy import Column, Text, Integer, Enum, ForeignKey, UniqueConstraint
+import uuid
+from sqlalchemy import Column, Text, Integer,Boolean, DateTime, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from Base import Base
-from services.courses_service.app.modules.courses.enums import QuestionType
+from .Base import Base
+from app.modules.courses.enums import QuestionType
 
 
 class Question(Base):
@@ -26,8 +27,12 @@ class Question(Base):
   order_index = Column(Integer, nullable=False, default=0)
   score = Column(Integer, nullable=False, default=1)  # Баллы за вопрос
 
-  test = relationship("Test", back_populates="questions")
-  answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
+  delete_flg = Column(Boolean, nullable=False, default=False)
+  created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+  update_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+  test = relationship("Test", back_populates="question")
+  answer = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
 
   __table_args__ = (
     UniqueConstraint('test_id', 'order_index', name='uq_question_order_per_test'),

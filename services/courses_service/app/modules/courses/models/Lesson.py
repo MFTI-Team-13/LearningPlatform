@@ -1,12 +1,12 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Text, Integer, DateTime, Enum, ForeignKey, UniqueConstraint
+import uuid
+from sqlalchemy import Column, String, Text, Integer,Boolean, DateTime, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from Base import Base
-from services.courses_service.app.modules.courses.enums import ContentType
+from .Base import Base
+from app.modules.courses.enums import ContentType
 
 
 class Lesson(Base):
@@ -24,14 +24,13 @@ class Lesson(Base):
     content_url = Column(String)
 
     order_index = Column(Integer, nullable=False, default=0)
+    delete_flg = Column(Boolean, nullable=False, default=False)
 
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
 
-    course = relationship("Course", back_populates="lessons")
-    test = relationship("Test", back_populates="lessons", cascade="all, delete-orphan")
-
-    delete_flg = Column(Boolean, nullable=False, default=False)
+    course = relationship("Course", back_populates="lesson")
+    test = relationship("Test", back_populates="lesson", cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint('course_id', 'order_index', name='uq_lesson_order_per_course'),

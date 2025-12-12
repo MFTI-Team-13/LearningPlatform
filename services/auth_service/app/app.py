@@ -3,7 +3,6 @@ import os
 from fastapi import FastAPI
 
 from app.api.main_router import main_router
-from app.middleware.auth import setup_auth_middleware
 
 
 def try_pycharm_attach() -> None:
@@ -39,8 +38,6 @@ def create_app() -> FastAPI:
     try_pycharm_attach()
 
   # app.add_event_handler("startup", _startup_attach)
-
-  setup_auth_middleware(app)
 
   app.include_router(main_router)
   return app

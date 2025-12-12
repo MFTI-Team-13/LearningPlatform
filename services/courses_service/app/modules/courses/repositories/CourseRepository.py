@@ -1,96 +1,20 @@
-# repositories/course_repository.py
-from typing import Any, Optional, List
-from uuid import UUID
+from typing import Optional, List
+from datetime import datetime
 
 from fastapi import Depends
+from uuid import UUID
 from sqlalchemy import select, and_, or_
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.course import Course
-from enums.course_enums import CourseLevel
-from database import get_session
+from app.modules.courses.models_import import Course
+from app.modules.courses.enums import CourseLevel
+from app.common.db.session import get_session
 
 
 class CourseRepository:
   def __init__(self, db: AsyncSession):
     self.db = db
-
-  async def get_by_id(self, course_id: UUID) -> Optional[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                  Course.id == course_id,
-                  Course.delete_flg == False
-              )
-          )
-      )
-      return result.scalar_one_or_none()
-
-  async def get_by_title(self, title: str) -> Optional[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                Course.title == title,
-                Course.delete_flg == False
-              )
-          )
-       )
-      return result.scalar_one_or_none()
-
-  async def exists_by_title(self, title: str) -> bool:
-      course = await self.get_by_title(title)
-      return course is not None
-
-  async def get_all(self,skip: int = 0,limit: int = 100,include_deleted: bool = False) -> List[Course]:
-      query = select(Course)
-
-      if not include_deleted:
-          query = query.where(Course.delete_flg == False)
-
-      query = query.offset(skip).limit(limit)
-
-      result = await self.db.execute(query)
-      return result.scalars().all()
-
-  async def get_by_author(self,author_id: UUID,skip: int = 0,limit: int = 100) -> List[Course]:
-
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                Course.author_id == author_id,
-                Course.delete_flg == False
-              )
-          )
-          .offset(skip)
-          .limit(limit)
-      )
-      return result.scalars().all()
-
-  async def get_by_level(self,level: CourseLevel,skip: int = 0,limit: int = 100) -> List[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                Course.level == level,
-                Course.delete_flg == False
-              )
-          )
-          .offset(skip)
-          .limit(limit)
-      )
-      return result.scalars().all()
-
-  async def get_published(self,skip: int = 0,limit: int = 100) -> List[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                Course.is_published == True,
-                Course.delete_flg == False
-              )
-          )
-          .offset(skip)
-          .limit(limit)
-      )
-      return result.scalars().all()
 
   async def create(self, course_data: dict) -> Course:
       course = Course(**course_data)
@@ -99,8 +23,74 @@ class CourseRepository:
       await self.db.refresh(course)
       return course
 
+  async def get_by_id(self, id: UUID, delete_flg:bool) -> Optional[Course]:
+      query = select(Course).where(Course.id == id)
+
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
+
+      result = await self.db.execute(query)
+
+      return result.scalar_one_or_none()
+
+  async def get_by_title(self, title: str,delete_flg:bool) -> Optional[Course]:
+      query = select(Course).where(Course.title == title)
+
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
+
+      result = await self.db.execute(query)
+      return result.scalar_one_or_none()
+
+  async def get_all(self,delete_flg: bool, skip: int,limit: int) -> List[Course]:
+      query = select(Course)
+
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
+
+      query = query.offset(skip).limit(limit)
+
+      result = await self.db.execute(query)
+      return result.scalars().all()
+
+  async def get_by_author(self,author_id: UUID,delete_flg:bool,skip: int,limit: int) -> List[Course]:
+      query = select(Course).where(Course.author_id == author_id)
+
+      if delete_flg is not None:
+          query = query.where(Course.delete_flg == delete_flg)
+
+      query = query.offset(skip).limit(limit)
+
+      result = await self.db.execute(query)
+
+      return result.scalars().all()
+
+  async def get_by_level(self,level: CourseLevel,delete_flg:bool,skip: int,limit: int) -> List[Course]:
+    query = select(Course).where(Course.level == level)
+
+    if delete_flg is not None:
+      query = query.where(Course.delete_flg == delete_flg)
+
+    query = query.offset(skip).limit(limit)
+
+    result = await self.db.execute(query)
+
+    return result.scalars().all()
+
+  async def get_published(self,delete_flg:bool,skip: int,limit: int) -> List[Course]:
+    query = select(Course).where(Course.is_published == True)
+
+    if delete_flg is not None:
+      query = query.where(Course.delete_flg == delete_flg)
+
+    query = query.offset(skip).limit(limit)
+
+    result = await self.db.execute(query)
+
+    return result.scalars().all()
+
   async def update(self, course_id: UUID, course_data: dict) -> Optional[Course]:
-      course = await self.get_by_id(course_id)
+      course = await self.get_by_id(course_id,False)
 
       if not course:
           return None
@@ -109,12 +99,13 @@ class CourseRepository:
           if hasattr(course, key):
             setattr(course, key, value)
 
+      course.updated_at = datetime.utcnow()
       await self.db.commit()
       await self.db.refresh(course)
       return course
 
   async def soft_delete(self, course_id: UUID) -> bool:
-      course = await self.get_by_id(course_id)
+      course = await self.get_by_id(course_id, delete_flg = False)
 
       if not course:
           return False
@@ -124,7 +115,7 @@ class CourseRepository:
       return True
 
   async def hard_delete(self, course_id: UUID) -> bool:
-      course = await self.get_by_id(course_id)
+      course = await self.get_by_id(course_id, None)
 
       if not course:
           return False
@@ -133,27 +124,27 @@ class CourseRepository:
       await self.db.commit()
       return True
 
-  async def publish(self, course_id: UUID) -> bool:
-      course = await self.get_by_id(course_id)
+  async def publish(self, course_id: UUID) -> Optional[Course]:
+      course = await self.get_by_id(course_id,False)
 
       if not course:
-          return False
+          return None
 
       course.is_published = True
       await self.db.commit()
-      return True
+      return course
 
-  async def unpublish(self, course_id: UUID) -> bool:
-      course = await self.get_by_id(course_id)
+  async def unpublish(self, course_id: UUID) -> Optional[Course]:
+      course = await self.get_by_id(course_id,None)
 
       if not course:
-          return False
+          return None
 
       course.is_published = False
       await self.db.commit()
-      return True
+      return course
 
-  async def search(self,search_term: str,skip: int = 0,limit: int = 100) -> List[Course]:
+  async def search(self,search_term: str,skip: int,limit:int) -> List[Course]:
       result = await self.db.execute(
           select(Course).where(
               and_(
@@ -169,14 +160,6 @@ class CourseRepository:
       )
       return result.scalars().all()
 
-  async def count(self, include_deleted: bool = False) -> int:
-      query = select(Course)
-
-      if not include_deleted:
-          query = query.where(Course.delete_flg == False)
-
-      result = await self.db.execute(query)
-      return len(result.scalars().all())
 
   async def get_with_lessons(self, course_id: UUID) -> Optional[Course]:
       result = await self.db.execute(
@@ -188,6 +171,26 @@ class CourseRepository:
           )
       )
       return result.scalar_one_or_none()
+
+  async def get_all_with_lessons(self,delete_flg: bool | None,skip: int,limit: int) -> List[Course]:
+    query = select(Course).options(selectinload(Course.lesson))
+
+    if delete_flg is not None:
+        query = query.where(Course.delete_flg == delete_flg)
+
+    query = query.offset(skip).limit(limit)
+
+    result = await self.db.execute(query)
+    courses = result.scalars().unique().all()
+
+    for course in courses:
+      if delete_flg is not None:
+        course.lessons = [
+          lesson for lesson in course.lessons
+          if lesson.delete_flg == delete_flg
+        ]
+
+    return courses
 
 
 async def get_course_repository(

@@ -29,15 +29,3 @@ class UserOut(BaseModel):
 
   display_name: str | None = None
   login: str | None = None
-
-
-class UserUpdateRequest(BaseModel):
-  email: EmailStr | None = None
-  role_id: str | None = None
-  is_active: bool | None = None
-  is_verified: bool | None = None
-  must_change_password: bool | None = None
-  first_name: str | None = Field(default=None, min_length=1)
-  last_name: str | None = Field(default=None, min_length=1)
-  middle_name: str | None = None
-  display_name: str | None = None

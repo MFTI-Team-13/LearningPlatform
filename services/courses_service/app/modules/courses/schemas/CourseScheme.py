@@ -1,8 +1,11 @@
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
-from typing import Optional
-from uuid import UUID
+from typing import Optional,List
 from datetime import datetime
-from services.courses_service.app.modules.courses.enums import CourseLevel
+
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from uuid import UUID
+
+from app.modules.courses.enums import CourseLevel
+from app.modules.courses.schemas.LessonScheme import LessonResponse
 
 
 class CourseBase(BaseModel):
@@ -31,7 +34,7 @@ class CourseBase(BaseModel):
 
 
 class CourseCreate(CourseBase):
-  author_id: UUID = Field(..., description="ID автора курса")
+  pass
 
 
 class CourseUpdate(BaseModel):
@@ -61,3 +64,6 @@ class CourseResponse(BaseModel):
   delete_flg: bool
   create_at: datetime
   update_at: datetime
+
+class CourseWithLessonsResponse(CourseResponse):
+  lessons: List['LessonResponse'] = Field(default_factory=list, description="Уроки")

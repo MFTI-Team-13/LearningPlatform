@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional
-from uuid import UUID
 from datetime import datetime
+
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class CourseReviewBase(BaseModel):
@@ -42,14 +43,12 @@ class CourseReviewUpdate(BaseModel):
 
   rating: Optional[int] = Field(None, ge=1, le=5)
   comment: Optional[str] = Field(None, max_length=2000)
-  is_published: Optional[bool] = None
 
   @model_validator(mode='after')
   def validate_not_all_null(self):
     if all([
       self.rating is None,
-      self.comment is None,
-      self.is_published is None
+      self.comment is None
     ]):
       raise ValueError('Для обновления отзыва необходимо указать хотя бы одно поле')
     return self
@@ -64,6 +63,7 @@ class CourseReviewResponse(BaseModel):
   is_published: bool
   course_id: UUID
   user_id: UUID
+  delete_flg: bool
   created_at: datetime
   updated_at: datetime
 

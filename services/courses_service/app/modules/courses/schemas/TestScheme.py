@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 from typing import Optional
-from uuid import UUID
 from datetime import datetime
+
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class TestBase(BaseModel):
@@ -28,14 +29,12 @@ class TestUpdate(BaseModel):
 
   title: Optional[str] = Field(None, min_length=3, max_length=255)
   description: Optional[str] = None
-  is_active: Optional[bool] = None
 
   @model_validator(mode='after')
   def validate_not_all_null(self):
     if all([
       self.title is None,
-      self.description is None,
-      self.is_active is None
+      self.description is None
     ]):
       raise ValueError('Для обновления теста необходимо указать хотя бы одно поле')
     return self
@@ -48,6 +47,7 @@ class TestResponse(BaseModel):
   title: str
   description: Optional[str]
   is_active: bool
+  lesson_id: UUID
+  delete_flg:bool
   created_at: datetime
   update_at: datetime
-  lesson_id: UUID

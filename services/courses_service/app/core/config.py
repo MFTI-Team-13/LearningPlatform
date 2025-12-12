@@ -12,6 +12,10 @@ class Settings(BaseSettings):
 
   api_prefix: str = Field(alias="API_PREFIX", default="/api/v1")
 
+  auth_jwks_url: str | None = Field(alias="AUTH_JWKS_URL", default=None)
+  auth_issuer: str | None = Field(alias="AUTH_ISSUER", default=None)
+  auth_audience: str | None = Field(alias="AUTH_AUDIENCE", default=None)
+
   model_config = {
     "env_file": "courses_service.env",
     "case_sensitive": True,

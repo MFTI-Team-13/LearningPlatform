@@ -60,7 +60,33 @@ def create_app() -> FastAPI:
           status_code=422,
           content={"detail": msg}
         )
+      if err["type"] == "missing":
+        field = err["loc"][-1]
+        return JSONResponse(
+          status_code=422,
+          content={"detail": f"Поле '{field}' является обязательным"}
+        )
 
+      if err["type"] == "enum":
+        input_value = err.get("input")
+        expected = err.get("ctx", {}).get("expected")
+        return JSONResponse(
+          status_code=422,
+          content={
+            "detail": f"Недопустимое значение '{input_value}'. "
+                      f"Ожидается одно из: {expected}"
+          }
+        )
+
+      if err["type"] == "json_invalid":
+        ctx = err.get("ctx", {})
+        reason = ctx.get("error", "Некорректный JSON")
+        return JSONResponse(
+          status_code=400,
+          content={
+            "detail": f"Ошибка разбора JSON: {reason}. Проверьте корректность тела запроса."
+          }
+        )
     return JSONResponse(
       status_code=422,
       content={"detail": errors}

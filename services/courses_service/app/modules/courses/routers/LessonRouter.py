@@ -1,9 +1,8 @@
+from typing import List
 
 from fastapi import APIRouter, Depends
 from uuid import UUID
-from typing import List
-from app.middleware.auth import require_roles
-from learning_platform_common.utils import ResponseUtils
+
 from app.modules.courses.enums import ContentType
 from app.modules.courses.schemas_import import (
     LessonCreate,
@@ -11,7 +10,7 @@ from app.modules.courses.schemas_import import (
     LessonResponse
 )
 from app.modules.courses.services_import import LessonService, get_lesson_service
-from app.modules.courses.exceptions import NotFoundError, AlreadyExistsError,handle_errors
+from app.modules.courses.exceptions import handle_errors
 
 router = APIRouter(prefix="/lesson")
 

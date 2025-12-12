@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
-from uuid import UUID
 from typing import List
 
-from app.modules.courses.schemas.QuestionScheme import (
+from fastapi import APIRouter, Depends
+from uuid import UUID
+
+from app.modules.courses.schemas_import import (
     QuestionCreate,
     QuestionUpdate,
     QuestionResponse

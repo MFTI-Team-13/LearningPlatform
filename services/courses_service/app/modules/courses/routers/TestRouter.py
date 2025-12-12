@@ -1,6 +1,7 @@
+from typing import List
+
 from fastapi import APIRouter, Depends
 from uuid import UUID
-from typing import List
 
 from app.modules.courses.schemas_import import (
     TestCreate,

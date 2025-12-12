@@ -1,9 +1,17 @@
+from typing import List, Optional
+
 from fastapi import Depends, HTTPException
 from uuid import UUID
 
-from app.modules.courses.repositories_import import QuestionRepository, get_question_repository,TestRepository, get_test_repository
-from app.modules.courses.schemas.QuestionScheme import QuestionCreate, QuestionUpdate,QuestionResponse
 from .BaseService import BaseService
+from app.modules.courses.models_import import Question
+from app.modules.courses.repositories_import import (
+    QuestionRepository,
+    get_question_repository,
+    TestRepository,
+    get_test_repository
+)
+from app.modules.courses.schemas.QuestionScheme import QuestionCreate
 from app.modules.courses.exceptions import (
     NotFoundError,
     ConflictError
@@ -17,17 +25,26 @@ class QuestionService(BaseService):
         self.repo = repo
         self.test_repo = test_repo
 
-    async def create(self, in_data: QuestionCreate) -> QuestionResponse:
-        test = await self.test_repo.get_by_id(in_data.test_id, delete_flg=False)
-        if not test:
-            raise NotFoundError("Тест для вопроса не найден")
+    async def find_test(self, test_id: UUID, delete_flg:bool | None)  -> bool:
+        test_exists = await self.test_repo.get_by_id(test_id, delete_flg=None)
+
+        if not test_exists:
+            raise NotFoundError("Тест не существует")
+        if delete_flg == False and test_exists.delete_flg == True:
+            raise NotFoundError("Тест не найден")
+
+        return True
+
+    async def create(self, in_data: QuestionCreate) -> Question:
+        await self.find_test(in_data.test_id, False)
 
         max_order = await self.repo.get_max_order_index(in_data.test_id,None)
         in_data.order_index = max_order + 1
 
         return await super().create(in_data)
 
-    async def get_by_test_id(self, test_id: UUID, delete_flg: bool | None, skip: int, limit: int):
+    async def get_by_test_id(self, test_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> List[Question]:
+        await self.find_test(test_id, delete_flg)
         question = await self.repo.get_by_test_id(test_id, delete_flg, skip, limit)
 
         if not question:
@@ -35,7 +52,8 @@ class QuestionService(BaseService):
 
         return question
 
-    async def get_by_test_and_order(self, test_id: UUID, order_index: int,delete_flg: bool | None):
+    async def get_by_test_and_order(self, test_id: UUID, order_index: int,delete_flg: bool | None) -> Optional[Question]:
+        await self.find_test(test_id, delete_flg)
         question = await self.repo.get_by_test_and_order(test_id, order_index,delete_flg)
 
         if not question:
@@ -43,7 +61,7 @@ class QuestionService(BaseService):
 
         return question
 
-    async def get_by_question_type(self, question_type,delete_flg: bool, skip: int, limit: int):
+    async def get_by_question_type(self, question_type,delete_flg: bool, skip: int, limit: int) -> List[Question]:
         question = await self.repo.get_by_question_type(question_type,delete_flg, skip, limit)
 
         if not question:
@@ -52,18 +70,17 @@ class QuestionService(BaseService):
         return question
 
     async def get_max_order_index(self, test_id: UUID, delete_flg: bool | None) -> int:
-        course = await self.test_repo.get_by_id(test_id, delete_flg=None)
-        if not course:
-           raise NotFoundError("Вопрос не найден")
+        await self.find_test(test_id, delete_flg)
 
         max_index = await self.repo.get_max_order_index(test_id, delete_flg)
 
         if max_index == -1:
-          raise NotFoundError("У данного курса нет уроков")
+          raise NotFoundError("У теста курса нет вопросов")
 
         return max_index
 
-    async def search_in_test(self, test_id: UUID, query: str,delete_flg: bool | None, skip: int, limit: int):
+    async def search_in_test(self, test_id: UUID, query: str,delete_flg: bool | None, skip: int, limit: int) -> List[Question]:
+        await self.find_test(test_id, delete_flg)
         questions = await self.repo.search_in_test(test_id,query,delete_flg, skip, limit)
 
         if not questions:
@@ -71,19 +88,17 @@ class QuestionService(BaseService):
 
         return questions
 
-    async def create_bulk(self, questions: list[QuestionCreate]):
-      if not questions:
-        raise ConflictError("Список вопросов пуст")
+    async def create_bulk(self, questions: list[QuestionCreate]) -> List[Question]:
+        if not questions:
+            raise ConflictError("Список вопросов пуст")
 
-      test_id = questions[0].test_id
-      test = await self.test_repo.get_by_id(test_id, delete_flg=False)
+        test_id = questions[0].test_id
+        await self.find_test(test_id, False)
 
-      if not test:
-        raise NotFoundError("Тест для добавления вопросов не найден")
+        return await self.repo.create_bulk([q.model_dump() for q in questions])
 
-      return await self.repo.create_bulk([q.model_dump() for q in questions])
-
-    async def get_total_score_by_test(self, test_id: UUID, delete_flg: bool | None ):
+    async def get_total_score_by_test(self, test_id: UUID, delete_flg: bool | None ) -> int:
+        await self.find_test(test_id, delete_flg)
         result = await self.repo.get_total_score_by_test(test_id,delete_flg)
 
         if result == -1:

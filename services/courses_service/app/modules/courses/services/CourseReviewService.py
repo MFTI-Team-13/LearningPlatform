@@ -1,101 +1,146 @@
+from typing import Optional, List
+
 from fastapi import Depends, HTTPException
 from uuid import UUID
 
-from app.modules.courses.repositories_import import CourseReviewRepository, get_course_review_repository
-from app.modules.courses.schemas.CourseReviewScheme import (
-    CourseReviewCreate,
-    CourseReviewUpdate,
-    CourseReviewResponse
-)
 from .BaseService import BaseService
+from app.modules.courses.models_import import CourseReview
+from app.modules.courses.repositories_import import (
+    CourseReviewRepository,
+    get_course_review_repository,
+    CourseRepository,
+    get_course_repository
+)
+from app.modules.courses.schemas.CourseReviewScheme import CourseReviewCreate
+from app.modules.courses.exceptions import (
+    NotFoundError,
+    ConflictError
+)
 
 
 class CourseReviewService(BaseService):
 
-    def __init__(self, repo: CourseReviewRepository):
+    def __init__(self, repo: CourseReviewRepository, course_repo: CourseRepository):
         super().__init__(repo)
         self.repo = repo
+        self.course_repo = course_repo
 
-    async def create(self, in_data: CourseReviewCreate) -> CourseReviewResponse:
+    async def find_course(self, course_id: UUID, delete_flg:bool | None):
+        course_exists = await self.course_repo.get_by_id(course_id, delete_flg=None)
+
+        if not course_exists:
+            raise NotFoundError("Курс для отзыва не существует")
+        if delete_flg == False and course_exists.delete_flg == True:
+            raise NotFoundError("Курс не найден")
+
+        return course_exists
+
+    async def create(self, in_data: CourseReviewCreate) -> CourseReview:
+        await self.find_course(in_data.course_id, delete_flg=False)
         return await super().create(in_data)
 
-    async def get_by_id(self, review_id: UUID) -> CourseReviewResponse:
-        review = await self.repo.get_by_id(review_id)
-        if not review:
-            raise HTTPException(404, "Отзыв не найден")
-        return review
+    async def get_by_user_id(self, user_id: UUID, delete_flg:bool | None, skip: int, limit: int) -> List[CourseReview]:
+        res = await self.repo.get_by_user_id(user_id, delete_flg, skip, limit)
 
-    async def get_by_course_and_user(
-        self,
-        course_id: UUID,
-        user_id: UUID
-    ) -> CourseReviewResponse:
-        res = await self.repo.get_by_course_and_user(course_id, user_id)
         if not res:
-            raise HTTPException(404, "Отзыв не найден")
+            raise NotFoundError(f"Отзывы не найдены")
+
         return res
 
-    async def get_by_course_id(
-        self,
-        course_id: UUID,
-        skip: int,
-        limit: int
-    ) -> list[CourseReviewResponse]:
-        return await self.repo.get_by_course_id(course_id, skip, limit)
+    async def get_by_course_id(self, course_id: UUID, delete_flg:bool | None, skip: int, limit: int) -> List[CourseReview]:
+        await self.find_course(course_id, delete_flg=delete_flg)
 
-    async def get_by_user_id(
-        self,
-        user_id: UUID,
-        skip: int,
-        limit: int
-    ) -> list[CourseReviewResponse]:
-        return await self.repo.get_by_user_id(user_id, skip, limit)
+        res = await self.repo.get_by_course_id(course_id, delete_flg, skip, limit)
 
-    async def get_by_rating(
-        self,
-        rating: int,
-        skip: int,
-        limit: int
-    ) -> list[CourseReviewResponse]:
-        return await self.repo.get_by_rating(rating, skip, limit)
+        if not res:
+            raise NotFoundError(f"Отзывы не найдены")
 
-    async def count_by_course(self, course_id: UUID) -> int:
-        return await self.repo.count_by_course(course_id)
+        return res
+
+
+    async def get_by_course_and_user_id(self,course_id: UUID,user_id: UUID, delete_flg:bool | None) -> Optional[CourseReview]:
+        await self.find_course(course_id, delete_flg=delete_flg)
+
+        res = await self.repo.get_by_course_and_user_id(course_id, user_id, delete_flg)
+        if not res:
+            raise NotFoundError(f"Отзывы не найдены")
+
+        return res
+
+    async def soft_delete(self, id: UUID) -> bool:
+        courseReview = await self.get_by_id(id, None)
+
+        if courseReview.is_published:
+          await self.repo.unpublish(id)
+
+        return await super().soft_delete(id)
+
+    async def get_by_rating(self,course_id: UUID,rating: int,skip: int,limit: int) -> List[CourseReview]:
+        await self.find_course(course_id, delete_flg=False)
+        res = await self.repo.get_by_rating(course_id, rating, skip, limit)
+
+        if not res:
+            raise NotFoundError(f"Отзывы не найдены c рейтингом: {rating}")
+
+        return res
+
+    async def count_by_course(self, course_id: UUID, is_published: bool | None) -> int:
+        await self.find_course(course_id, delete_flg=False)
+        res = await self.repo.count_by_course(course_id, is_published)
+
+        if res == 0:
+            raise NotFoundError(f"Отзывы не найдены")
+
+        return res
 
     async def get_average_rating(self, course_id: UUID) -> float:
-        return await self.repo.get_average_rating(course_id)
+        await self.find_course(course_id, delete_flg=False)
+        res = await self.repo.get_average_rating(course_id)
+
+        if res == 0.0:
+            raise NotFoundError(f"Отзывы не найдены")
+
+        return res
 
     async def get_rating_distribution(self, course_id: UUID) -> dict[int, int]:
-        return await self.repo.get_rating_distribution(course_id)
+        await self.find_course(course_id, delete_flg=False)
+        dist = await self.repo.get_rating_distribution(course_id)
 
-    async def toggle_publish(self, review_id: UUID) -> CourseReviewResponse:
-        review = await self.get_by_id(review_id)
-        new_state = not review.is_published
-        return await self.repo.set_publish_state(review_id, new_state)
+        if all(v == 0 for v in dist.values()):
+            raise NotFoundError("Отзывы не найдены")
 
-    async def search_in_comments(
-        self,
-        course_id: UUID,
-        query: str,
-        skip: int,
-        limit: int
-    ) -> list[CourseReviewResponse]:
-        return await self.repo.search_in_comments(course_id, query, skip, limit)
+        return dist
 
-    async def get_recent_reviews(
-        self,
-        limit: int
-    ) -> list[CourseReviewResponse]:
-        return await self.repo.get_recent_reviews(limit)
+    async def search_in_comments(self,course_id: UUID,query: str,delete_flg: bool | None,skip: int,limit: int) -> List[CourseReview]:
+        await self.find_course(course_id, delete_flg=delete_flg)
+        res = await self.repo.search_in_comments(course_id, query,delete_flg, skip, limit)
 
-    async def soft_delete(self, id: UUID) -> CourseReviewResponse:
-        return await self.repo.soft_delete(id)
+        if not res:
+            raise NotFoundError(f"Отзывы не найдены")
 
-    async def hard_delete(self, id: UUID) -> None:
-        return await self.repo.hard_delete(id)
+        return res
 
+    async def publish(self, id: UUID) -> Optional[CourseReview]:
+        courseReview = await self.get_by_id(id,None)
+
+        if courseReview.delete_flg:
+            raise ConflictError("Нельзя опубликовать удалённый отзыв")
+
+        if courseReview.is_published:
+            raise ConflictError("Отзыв уже опубликован")
+
+        return await self.repo.publish(id)
+
+    async def unpublish(self, id: UUID) -> Optional[CourseReview]:
+        courseReview = await self.get_by_id(id,None)
+
+        if not courseReview.is_published:
+            raise ConflictError("Отзыв уже скрыт")
+
+        return await self.repo.unpublish(id)
 
 async def get_course_review_service(
-    repo: CourseReviewRepository = Depends(get_course_review_repository)
+  repo: CourseReviewRepository = Depends(get_course_review_repository),
+  course_repo: CourseRepository = Depends(get_course_repository)
 ) -> CourseReviewService:
-    return CourseReviewService(repo)
+  return CourseReviewService(repo, course_repo)

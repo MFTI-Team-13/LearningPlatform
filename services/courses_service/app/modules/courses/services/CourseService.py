@@ -1,14 +1,19 @@
+from typing import List,Optional
+
 from fastapi import Depends
 from uuid import UUID
 
-from app.modules.courses.repositories_import import CourseRepository, get_course_repository
-from app.modules.courses.schemas.CourseScheme import CourseCreate, CourseUpdate, CourseResponse
 from .BaseService import BaseService
-
+from app.modules.courses.models_import import Course
+from app.modules.courses.repositories_import import CourseRepository, get_course_repository
+from app.modules.courses.schemas.CourseScheme import (
+    CourseCreate,
+    CourseUpdate
+)
 from app.modules.courses.exceptions import (
     NotFoundError,
     AlreadyExistsError,
-    ConflictError,
+    ConflictError
 )
 
 
@@ -17,16 +22,16 @@ class CourseService(BaseService):
         super().__init__(repo)
         self.repo: CourseRepository = repo
 
-    async def create(self, in_data: CourseCreate) -> CourseResponse:
-        if await self.find_by_title(in_data.title):
+    async def create(self,author_id:UUID, in_data: CourseCreate) -> Course:
+        if await self.find_by_title(in_data.title, None):
             raise AlreadyExistsError("Курс с таким названием уже существует")
 
-        return await super().create(in_data)
+        return await super().create(author_id,in_data)
 
-    async def find_by_title(self, title: str, delete_flg: bool | None = None) -> CourseResponse:
+    async def find_by_title(self, title: str, delete_flg: bool | None) -> Optional[Course]:
         return await self.repo.get_by_title(title, delete_flg)
 
-    async def get_by_title(self, title: str, delete_flg: bool | None = None) -> CourseResponse:
+    async def get_by_title(self, title: str, delete_flg: bool | None) -> Course:
         res = await self.find_by_title(title, delete_flg)
 
         if res is None:
@@ -34,41 +39,41 @@ class CourseService(BaseService):
 
         return res
 
-    async def get_by_author(self, author_id: UUID,delete_flg:bool, skip: int, limit: int):
+    async def get_by_author(self, author_id: UUID,delete_flg:bool | None, skip: int, limit: int) -> List[Course]:
         res = await self.repo.get_by_author(author_id, delete_flg, skip, limit)
 
         if not res:
-            raise NotFoundError(f"Объекты не найдены")
+            raise NotFoundError(f"Курсы не найдены")
 
         return res
 
-    async def get_by_level(self, level: str,delete_flg:bool,skip: int, limit: int):
+    async def get_by_level(self, level: str,delete_flg:bool | None,skip: int, limit: int) -> List[Course]:
         res = await self.repo.get_by_level(level,delete_flg, skip, limit)
 
         if not res:
-          raise NotFoundError(f"Объекты уровня '{level}' не найдены")
+          raise NotFoundError(f"Курсы уровня '{level}' не найдены")
 
         return res
 
-    async def get_published(self, delete_flg:bool, skip: int, limit: int):
+    async def get_published(self, delete_flg:bool | None, skip: int, limit: int) -> List[Course]:
         res = await self.repo.get_published(delete_flg, skip, limit)
 
         if not res:
-          raise NotFoundError("Опубликованные объекты не найдены")
+          raise NotFoundError("Опубликованные курсы не найдены")
 
         return res
 
 
-    async def update(self, id: UUID, in_data: CourseUpdate) -> CourseResponse:
-        existing = await self.get_by_id(id, False)
+    async def update(self, id: UUID, in_data: CourseUpdate) -> Course:
+        course = await self.get_by_id(id, False)
 
-        if in_data.title and in_data.title != existing.title:
-            if await self.find_by_title(in_data.title):
+        if in_data.title and in_data.title != course.title:
+            if await self.find_by_title(in_data.title, None):
                 raise AlreadyExistsError("Курс с таким названием уже существует")
 
         return await super().update(id, in_data)
 
-    async def publish(self, id: UUID):
+    async def publish(self, id: UUID) -> Optional[Course]:
         course = await self.get_by_id(id,None)
 
         if course.delete_flg:
@@ -79,7 +84,7 @@ class CourseService(BaseService):
 
         return await self.repo.publish(id)
 
-    async def unpublish(self, id: UUID):
+    async def unpublish(self, id: UUID) -> Optional[Course]:
         course = await self.get_by_id(id,None)
 
         if not course.is_published:

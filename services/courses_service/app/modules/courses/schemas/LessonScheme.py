@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional
-from uuid import UUID
 from datetime import datetime
+
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+
 from app.modules.courses.enums import ContentType
 
 

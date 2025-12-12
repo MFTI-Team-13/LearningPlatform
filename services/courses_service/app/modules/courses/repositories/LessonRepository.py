@@ -1,7 +1,7 @@
 from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
 
+from uuid import UUID
 from fastapi import Depends
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,64 +22,64 @@ class LessonRepository:
         await self.db.refresh(lesson)
         return lesson
 
-    async def get_by_id(self, id: UUID, delete_flg: bool) -> Optional[Lesson]:
-      query = select(Lesson).where(Lesson.id == id)
+    async def get_by_id(self, id: UUID,  delete_flg: bool | None) -> Optional[Lesson]:
+        query = select(Lesson).where(Lesson.id == id)
 
-      if delete_flg is not None:
-        query = query.where(Lesson.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Lesson.delete_flg == delete_flg)
 
-      result = await self.db.execute(query)
+        result = await self.db.execute(query)
 
-      return result.scalar_one_or_none()
+        return result.scalar_one_or_none()
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Lesson]:
-      query = select(Lesson).where(Lesson.course_id == course_id)
+    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> List[Lesson]:
+        query = select(Lesson).where(Lesson.course_id == course_id)
 
-      if delete_flg is not None:
-        query = query.where(Lesson.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Lesson.delete_flg == delete_flg)
 
-      query = (
-        query.order_by(Lesson.order_index)
-        .offset(skip)
-        .limit(limit)
-      )
+        query = (
+            query.order_by(Lesson.order_index)
+            .offset(skip)
+            .limit(limit)
+        )
 
-      result = await self.db.execute(query)
-      return result.scalars().all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def get_by_course_and_order(self, course_id: UUID, order_index: int, delete_flg: bool | None) -> Optional[Lesson]:
-      query = (
-        select(Lesson)
-        .where(
-          and_(
-          Lesson.course_id == course_id,
-          Lesson.order_index == order_index
-          )
+        query = (
+            select(Lesson)
+            .where(
+                and_(
+                  Lesson.course_id == course_id,
+                  Lesson.order_index == order_index
+                )
+            )
         )
-      )
 
-      if delete_flg is not None:
-        query = query.where(Lesson.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Lesson.delete_flg == delete_flg)
 
-      result = await self.db.execute(query)
-      return result.scalar_one_or_none()
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
-    async def get_all(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> List[Lesson]:
-      query = select(Lesson)
+    async def get_all(self, delete_flg: bool | None, skip: int, limit: int) -> List[Lesson]:
+        query = select(Lesson)
 
-      if delete_flg is not None:
-        query = query.where(Lesson.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Lesson.delete_flg == delete_flg)
 
-      query = query.offset(skip).limit(limit)
+        query = query.offset(skip).limit(limit)
 
-      result = await self.db.execute(query)
-      return result.scalars().all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    async def get_by_content_type(self, content_type: ContentType,delete_flg: bool, skip: int = 0, limit: int = 100) -> List[Lesson]:
+    async def get_by_content_type(self, content_type: ContentType,delete_flg: bool | None, skip: int, limit: int) -> List[Lesson]:
         query = select(Lesson).where(Lesson.content_type == content_type)
 
         if delete_flg is not None:
-          query = query.where(Lesson.delete_flg == delete_flg)
+            query = query.where(Lesson.delete_flg == delete_flg)
 
         query = query.offset(skip).limit(limit)
 
@@ -90,7 +90,7 @@ class LessonRepository:
         query = select(func.max(Lesson.order_index)).where(Lesson.course_id == course_id)
 
         if delete_flg is not None:
-          query = query.where(Lesson.delete_flg == delete_flg)
+            query = query.where(Lesson.delete_flg == delete_flg)
 
         result = await self.db.execute(query)
         max_order = result.scalar()

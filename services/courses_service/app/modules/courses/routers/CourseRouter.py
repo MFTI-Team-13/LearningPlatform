@@ -1,27 +1,31 @@
-
-from fastapi import APIRouter, Depends
-from uuid import UUID
 from typing import List
-from app.middleware.auth import require_roles
-from learning_platform_common.utils import ResponseUtils
-from app.modules.courses.schemas.CourseScheme import (
+
+from fastapi import APIRouter, Depends,Security
+from uuid import UUID
+
+from app.modules.courses.schemas_import import (
     CourseCreate,
     CourseUpdate,
     CourseResponse,
     CourseWithLessonsResponse
 )
 from app.modules.courses.services_import import CourseService, get_course_service
-from app.modules.courses.exceptions import NotFoundError, AlreadyExistsError,handle_errors
+from app.modules.courses.exceptions import handle_errors
 from app.modules.courses.enums import CourseLevel
+from app.common.deps.auth import require_role,get_current_user,CurrentUser
 
 router = APIRouter(prefix="/course")
+
 
 @router.post("/create", response_model=CourseResponse)
 async def create_course(
     data: CourseCreate,
-    service: CourseService = Depends(get_course_service),
+    user: CurrentUser = Security(get_current_user),
+    service: CourseService = Depends(get_course_service)
 ):
-    return await handle_errors(lambda: service.create(data))
+    author_id = user.id
+    print(author_id)
+    return await handle_errors(lambda: service.create(author_id,data))
 
 @router.post("/getById", response_model=CourseResponse)
 async def get_course(
@@ -48,10 +52,6 @@ async def list_courses(
     service: CourseService = Depends(get_course_service),
 ):
     return await handle_errors(lambda: service.get_all(delete_flg, skip, limit))
-
-@router.get("/auth", dependencies=[Depends(require_roles("admin", "teacher"))])
-async def root():
-  return ResponseUtils.success("ok")
 
 
 @router.put("/update", response_model=CourseResponse)

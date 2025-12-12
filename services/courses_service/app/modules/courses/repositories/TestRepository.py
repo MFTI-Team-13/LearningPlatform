@@ -1,7 +1,7 @@
 from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
 
+from uuid import UUID
 from fastapi import Depends
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,76 +22,76 @@ class TestRepository:
         return test
 
     async def get_by_id(self, id: UUID, delete_flg: bool) -> Optional[Test]:
-      query = select(Test).where(Test.id == id)
+        query = select(Test).where(Test.id == id)
 
-      if delete_flg is not None:
-        query = query.where(Test.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Test.delete_flg == delete_flg)
 
-      result = await self.db.execute(query)
+        result = await self.db.execute(query)
 
-      return result.scalar_one_or_none()
+        return result.scalar_one_or_none()
 
     async def get_by_lesson_id(self, lesson_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Test]:
-      query = select(Test).where(Test.lesson_id == lesson_id)
+        query = select(Test).where(Test.lesson_id == lesson_id)
 
-      if delete_flg is not None:
-        query = query.where(Test.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Test.delete_flg == delete_flg)
 
-      query = (
-        query.offset(skip)
-        .limit(limit)
-      )
+        query = (
+            query.offset(skip)
+            .limit(limit)
+        )
 
-      result = await self.db.execute(query)
-      return result.scalars().all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def get_all(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> List[Test]:
-      query = select(Test)
+        query = select(Test)
 
-      if delete_flg is not None:
-        query = query.where(Test.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Test.delete_flg == delete_flg)
 
-      query = query.offset(skip).limit(limit)
+        query = query.offset(skip).limit(limit)
 
-      result = await self.db.execute(query)
-      return result.scalars().all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    async def activate(self, test_id: UUID) -> bool:
+    async def activate(self, test_id: UUID) -> Optional[Test]:
         test = await self.get_by_id(test_id, False)
 
         if not test:
-            return False
+            return None
 
         test.is_active = True
         await self.db.commit()
         return test
 
-    async def deactivate(self, test_id: UUID) -> bool:
+    async def deactivate(self, test_id: UUID) -> Optional[Test]:
         test = await self.get_by_id(test_id, None)
 
         if not test:
-            return False
+            return None
 
         test.is_active = False
         await self.db.commit()
         return test
 
     async def get_all_active(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> List[Test]:
-      query = select(Test).where(Test.is_active == True)
+        query = select(Test).where(Test.is_active == True)
 
-      if delete_flg is not None:
-        query = query.where(Test.delete_flg == delete_flg)
+        if delete_flg is not None:
+            query = query.where(Test.delete_flg == delete_flg)
 
-      query = query.offset(skip).limit(limit)
+        query = query.offset(skip).limit(limit)
 
-      result = await self.db.execute(query)
-      return result.scalars().all()
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def get_by_course_id(self, course_id: UUID,delete_flg:bool, skip: int = 0, limit: int = 100) -> List[Test]:
         query = (
-          select(Test)
-          .join(Lesson, Test.lesson_id == Lesson.id)
-          .where(Lesson.course_id == course_id)
+            select(Test)
+            .join(Lesson, Test.lesson_id == Lesson.id)
+            .where(Lesson.course_id == course_id)
         )
 
         if delete_flg is not None:
@@ -123,25 +123,25 @@ class TestRepository:
         return test
 
     async def soft_delete(self, test_id: UUID) -> bool:
-      test = await self.get_by_id(test_id,delete_flg = False)
+        test = await self.get_by_id(test_id,delete_flg = False)
 
-      if not test:
-        return False
+        if not test:
+            return False
 
-      test.delete_flg = True
-      test.updated_at = datetime.utcnow()
-      await self.db.commit()
-      return True
+        test.delete_flg = True
+        test.updated_at = datetime.utcnow()
+        await self.db.commit()
+        return True
 
     async def hard_delete(self, test_id: UUID) -> bool:
-      test = await self.get_by_id(test_id,None)
+        test = await self.get_by_id(test_id,None)
 
-      if not test:
-        return False
+        if not test:
+            return False
 
-      await self.db.delete(test)
-      await self.db.commit()
-      return True
+        await self.db.delete(test)
+        await self.db.commit()
+        return True
 
     async def search(self, search_term: str,delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Test]:
         query = select(Test).where(

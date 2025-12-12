@@ -4,6 +4,7 @@ from .services.TestService import TestService, get_test_service
 from .services.QuestionService import QuestionService, get_question_service
 from .services.AnswerService import AnswerService, get_answer_service
 from .services.CourseReviewService import CourseReviewService, get_course_review_service
+from .services.CourseUserService import CourseUserService, get_course_user_service
 
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
 "TestService", "get_test_service",
 "QuestionService", "get_question_service",
 "AnswerService", "get_answer_service",
-"CourseReviewService", "get_course_review_service"
+"CourseReviewService", "get_course_review_service",
+"CourseUserService", "get_course_user_service"
 ]

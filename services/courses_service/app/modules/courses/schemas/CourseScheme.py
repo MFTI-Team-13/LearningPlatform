@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from typing import Optional,List
-from uuid import UUID
 from datetime import datetime
+
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from uuid import UUID
+
 from app.modules.courses.enums import CourseLevel
 from app.modules.courses.schemas.LessonScheme import LessonResponse
 
@@ -32,7 +34,7 @@ class CourseBase(BaseModel):
 
 
 class CourseCreate(CourseBase):
-  author_id: UUID = Field(..., description="ID автора курса")
+  pass
 
 
 class CourseUpdate(BaseModel):

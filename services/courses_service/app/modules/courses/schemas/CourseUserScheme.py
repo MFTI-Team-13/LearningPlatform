@@ -1,11 +1,12 @@
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
-from datetime import datetime
 from typing import Optional
+from datetime import datetime
+
+from uuid import UUID
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class CourseUserBase(BaseModel):
-  course_id: str = Field(..., description="ID курса (уникальный)")
+  course_id: UUID = Field(..., description="ID курса")
   user_id: UUID = Field(..., description="ID пользователя")
   is_active: bool = Field(True, description="Активна ли запись")
 
@@ -19,7 +20,7 @@ class CourseUserCreate(CourseUserBase):
 
 
 class CourseUserUpdate(BaseModel):
-  course_id: Optional[str] = Field(None, description="ID курса (уникальный)")
+  course_id: Optional[UUID] = Field(None, description="ID курса (уникальный)")
   user_id: Optional[UUID] = Field(None, description="ID пользователя")
   is_active: Optional[bool] = Field(None, description="Активна ли запись")
 
@@ -29,9 +30,10 @@ class CourseUserUpdate(BaseModel):
 
 class CourseUserResponse(BaseModel):
   id: UUID
-  course_id: str
+  course_id: UUID
   user_id: UUID
   is_active: bool
+  delete_flg: bool
   create_at: datetime
   update_at: datetime
 

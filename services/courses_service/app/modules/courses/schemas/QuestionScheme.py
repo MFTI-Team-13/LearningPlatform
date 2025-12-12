@@ -1,9 +1,10 @@
-
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
-from typing import Optional, List
-from uuid import UUID
-from app.modules.courses.enums import QuestionType
+from typing import Optional,List
 from datetime import datetime
+
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+
+from app.modules.courses.enums import QuestionType
 
 
 class QuestionBase(BaseModel):

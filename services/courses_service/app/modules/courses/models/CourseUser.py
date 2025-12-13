@@ -18,7 +18,7 @@ class CourseUser(Base):
     create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     update_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    courses = relationship("Course", back_populates="courseUser")
+    courses = relationship("Course", back_populates="courseUser", lazy="selectin")
 
     __table_args__ = (
        UniqueConstraint('course_id', 'user_id', name='uq_course_user_rel'),

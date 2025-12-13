@@ -12,7 +12,7 @@ from app.modules.courses.repositories_import import (
     get_course_repository
 )
 from app.modules.courses.schemas.CourseUserScheme import (
-    CourseUserCreate
+    CourseUserCreate,CourseResponse, CourseUserWithCourseResponse
 )
 from app.modules.courses.exceptions import (
     NotFoundError,
@@ -57,6 +57,41 @@ class CourseUserService(BaseService):
             raise NotFoundError(f"Назначенные курсы не найдены")
 
         return res
+
+    async def get_with_courseUser_and_course(self, user_id: UUID,course_id: UUID|None, delete_flg:bool | None) -> List[CourseUser]:
+        if course_id is not None:
+            await self.find_course(course_id, delete_flg=delete_flg)
+
+        res = await self.repo.get_with_courseUser_and_course(user_id, course_id,delete_flg)
+
+        if not res:
+            raise NotFoundError(f"Назначенные курсы не найдены")
+        result_list = []
+        for course_user, course in res:
+          # Преобразуем в словарь с помощью .dict()
+          response = {
+            "id": course_user.id,
+            "user_id": course_user.user_id,
+            "is_active": course_user.is_active,
+            "delete_flg": course_user.delete_flg,
+            "create_at": course_user.create_at,
+            "update_at": course_user.update_at,
+            "course": {
+              "id": course.id,
+              "title": course.title,
+              "description": getattr(course, 'description', None),
+              "level": getattr(course, 'level', None),
+              "author_id": getattr(course, 'author_id', None),
+              "is_published": getattr(course, 'is_published', False),
+              "delete_flg": getattr(course, 'delete_flg', False),
+              "create_at": getattr(course, 'create_at', None),
+              "update_at": getattr(course, 'update_at', None)
+            }
+          }
+          result_list.append(response)
+
+        # Преобразуем каждый элемент в Pydantic модель
+        return [CourseUserWithCourseResponse(**item) for item in result_list]
 
     async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg:bool | None) -> Optional[CourseUser]:
         await self.find_course(course_id, delete_flg=delete_flg)

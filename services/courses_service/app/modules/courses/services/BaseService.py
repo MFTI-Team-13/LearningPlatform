@@ -10,16 +10,11 @@ class BaseService:
     def __init__(self, repo):
         self.repo = repo
 
-    async def create(self, user_id:UUID|None, in_data):
-        if user_id is not None:
-            dict = in_data.model_dump()
-            dict['author_id'] = user_id
-
-        return await self.repo.create(dict)
+    async def create(self, in_data):
+        return await self.repo.create(in_data)
 
     async def get_all(self, delete_flg:bool | None, skip: int, limit: int):
         res = await self.repo.get_all(delete_flg, skip, limit)
-        print(delete_flg)
         if not res:
             raise NotFoundError(f"Объекты не найден")
         return res

@@ -23,6 +23,7 @@ class CourseRepository:
       await self.db.refresh(course)
       return course
 
+
   async def get_by_id(self, id: UUID, delete_flg:bool) -> Optional[Course]:
       query = select(Course).where(Course.id == id)
 
@@ -53,7 +54,7 @@ class CourseRepository:
       result = await self.db.execute(query)
       return result.scalars().all()
 
-  async def get_by_author(self,author_id: UUID,delete_flg:bool,skip: int,limit: int) -> List[Course]:
+  async def get_by_author(self,author_id: UUID, delete_flg:bool,skip: int,limit: int) -> List[Course]:
       query = select(Course).where(Course.author_id == author_id)
 
       if delete_flg is not None:
@@ -64,6 +65,34 @@ class CourseRepository:
       result = await self.db.execute(query)
 
       return result.scalars().all()
+
+  async def get_by_author_and_course(self, author_id: UUID, course_id:UUID) -> List[Course]:
+      query = select(Course).where(
+          and_(
+              Course.author_id == author_id,
+              Course.course_id == course_id
+          )
+      )
+      result = await self.db.execute(query)
+      return result.scalar_one_or_none()
+
+  async def get_assigned_to_user(self, user_id: UUID, course_id:UUID):
+      query = (
+          select(Course)
+          .join(CourseUser, CourseUser.course_id == Course.id)
+          .where(
+              and_(
+                  CourseUser.user_id == user_id,
+                  CourseUser.is_active == True,
+                  Course.delete_flg == False,
+                  CourseUser.delete_flg == False,
+                  Course.is_published == True,
+                  Course.id == course_id
+              )
+          )
+      )
+      result = await self.db.execute(query)
+      return result.scalar_one_or_none()
 
   async def get_by_level(self,level: CourseLevel,delete_flg:bool,skip: int,limit: int) -> List[Course]:
     query = select(Course).where(Course.level == level)

@@ -31,7 +31,7 @@ review_schemas = [
 ]
 
 course_user_schemas = [
-    CourseUserCreate, CourseUserUpdate, CourseUserResponse
+    CourseUserCreate, CourseUserUpdate, CourseUserResponse, CourseUserWithCourseResponse, CourseUserListResponse
 ]
 
 all_schemas = (

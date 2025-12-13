@@ -22,14 +22,15 @@ class AlreadyExistsError(HTTPException):
         super().__init__(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
 
+class ForbiddenError(HTTPException):
+    def __init__(self, detail="Недостаточно прав для выполнения действия"):
+      super().__init__(status_code=status.HTTP_403_FORBIDDEN,detail=detail
+      )
+
 class ConflictError(HTTPException):
     def __init__(self, detail="Конфликт данных"):
         super().__init__(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
-
-class ForbiddenError(HTTPException):
-    def __init__(self, detail="Доступ запрещён"):
-        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
 async def handle_errors(func):

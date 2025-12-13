@@ -6,7 +6,9 @@ from uuid import UUID
 from app.modules.courses.schemas_import import (
     CourseUserCreate,
     CourseUserUpdate,
-    CourseUserResponse
+    CourseUserResponse,
+    CourseUserWithCourseResponse,
+CourseUserListResponse
 )
 from app.modules.courses.services_import import (
     CourseUserService,
@@ -116,3 +118,24 @@ async def hard_delete_course_user(
     service: CourseUserService = Depends(get_course_user_service),
 ):
     return await handle_errors(lambda: service.hard_delete(id))
+
+@router.post("/getWithCourse")
+async def get_with_course_and_course_user(
+    user_id:UUID,
+    course_id:UUID|None = None,
+    delete_flg:bool|None = None,
+    service: CourseUserService = Depends(get_course_user_service)
+):
+    try:
+      return await handle_errors(
+        lambda: service.get_with_courseUser_and_course(
+            user_id=user_id,
+            course_id=course_id,
+            delete_flg=delete_flg
+        )
+      )
+    except Exception as e:
+        # Для дебага: выводим ошибку
+        print(f"Error in router: {e}")
+        print(f"Result type: {type(result) if 'result' in locals() else 'N/A'}")
+        raise

@@ -4,9 +4,10 @@ from datetime import datetime
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, and_, func, desc
+from sqlalchemy.orm import selectinload
 from fastapi import Depends
 
-from app.modules.courses.models_import import CourseUser
+from app.modules.courses.models_import import CourseUser,Course
 from app.common.db.session import get_session
 
 
@@ -93,6 +94,30 @@ class CourseUserRepository:
 
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_with_courseUser_and_course(self,user_id: UUID,course_id: UUID | None,delete_flg: bool | None) -> List[CourseUser]:
+        query = (
+          select(CourseUser, Course)
+          .join(Course)
+          .where(
+            and_(CourseUser.user_id == user_id,
+                 CourseUser.course_id == Course.id
+        )
+          )
+          )
+
+        if delete_flg is not None:
+          query = query.where(
+            and_(CourseUser.delete_flg == delete_flg,
+                 Course.delete_flg == delete_flg
+            )
+          )
+
+        if course_id is not None:
+          query = query.where(CourseUser.course_id == course_id)
+
+        result = await self.db.execute(query)
+        return result.all()
 
     async def update(self, id: UUID, course_student_data: dict) -> Optional[CourseUser]:
         course_student = await self.get_by_id(id, False)

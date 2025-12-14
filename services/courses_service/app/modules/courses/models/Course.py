@@ -20,7 +20,7 @@ class Course(Base):
     is_published = Column(Boolean, nullable=False, default=False)
 
     delete_flg = Column(Boolean, nullable=False, default=False)
-  qate_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     update_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     courseUser = relationship("CourseUser", back_populates="courses", cascade="all, delete-orphan")

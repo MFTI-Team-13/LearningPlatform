@@ -53,7 +53,9 @@ async def list_roles(db: DbSession):
   )
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles("admin"))])
+@router.post(
+  "/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles("admin"))]
+)
 async def create_role(payload: RoleCreate, db: DbSession):
   role = Role(
     slug=_get_slug(payload.slug) or payload.slug,

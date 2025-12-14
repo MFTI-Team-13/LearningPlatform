@@ -28,6 +28,7 @@ services:
     volumes:
       - ../services/auth_service/app:/app/app
       - ../services/auth_service/migrations:/app/migrations
+      - ../services/auth_service/tests:/app/tests
       - ../services/auth_service/alembic.ini:/app/alembic.ini
       - ../shared:/app/shared
     ports:

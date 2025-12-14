@@ -115,7 +115,15 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdateRequest, db: DbSess
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user_not_found")
 
   if payload.role_id:
-    role = await db.get(Role, uuid.UUID(payload.role_id))
+    try:
+      role_uuid = uuid.UUID(payload.role_id)
+    except ValueError as err:
+      raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="invalid_role_id_format",
+      ) from err
+
+    role = await db.get(Role, role_uuid)
     if not role:
       raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="role_not_found")
     user.role = role

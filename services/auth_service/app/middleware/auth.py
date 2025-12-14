@@ -28,6 +28,10 @@ PUBLIC_PATHS = {
   "/auth/.well-known/jwks.json",
 }
 
+PUBLIC_GET_PATHS = {
+  "/roles",
+}
+
 
 def _normalize_path(path: str) -> str:
   normalized = path.rstrip("/")
@@ -37,7 +41,13 @@ def _normalize_path(path: str) -> str:
 def _is_public(path: str, method: str) -> bool:
   if method == "OPTIONS":
     return True
-  return path in PUBLIC_PATHS
+  if path in PUBLIC_PATHS:
+    return True
+  if method == "GET" and path in PUBLIC_GET_PATHS:
+    return True
+  if method == "GET" and path.startswith("/roles/"):
+    return True
+  return False
 
 
 def _extract_bearer_token(request: Request) -> str | None:

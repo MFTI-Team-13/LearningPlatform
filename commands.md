@@ -79,8 +79,5 @@ P.S. Если нет, то Pull requests → New pull request
 #### Посмотреть все проблемы по стилю/линту
 >ruff check .
 
-#### Отформатировать весь проект
->black .
-
-#### Прогнать все хуки как в коммите (ruff + black)
->pre-commit run --all-files
+#### Прогнать все хуки как в коммите (ruff)
+>pre-commit run ruff --all-files

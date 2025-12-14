@@ -39,29 +39,29 @@ packages = ["app"]
 [tool.hatch.build.targets.sdist]
 include = ["app", "pyproject.toml"]
 
-[tool.ruff]
-line-length = 100
-target-version = "py311"
-src = ["app"]
-indent-width = 2
-extend-exclude = [
-  "alembic",
-  "migrations",
-  ".venv",
-  "venv",
-]
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
-ignore = [
-  "E501",
-]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-docstring-code-format = true
+#[tool.ruff]
+#line-length = 100
+#target-version = "py311"
+#src = ["app"]
+#indent-width = 2
+#extend-exclude = [
+#  "alembic",
+#  "migrations",
+#  ".venv",
+#  "venv",
+#]
+#
+#[tool.ruff.lint]
+#select = ["E", "F", "I", "B", "UP"]
+#ignore = [
+#  "E501",
+#]
+#
+#[tool.ruff.format]
+#quote-style = "double"
+#indent-style = "space"
+#skip-magic-trailing-comma = false
+#docstring-code-format = true
 
 [tool.mypy]
 python_version = "3.11"

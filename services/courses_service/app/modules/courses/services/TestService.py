@@ -1,21 +1,19 @@
-from typing import List, Optional
-
-from fastapi import Depends, HTTPException
 from uuid import UUID
 
-from .BaseService import BaseService
+from fastapi import Depends, HTTPException
+
+from app.modules.courses.exceptions import ConflictError, NotFoundError
 from app.modules.courses.models_import import Test
 from app.modules.courses.repositories_import import (
-    TestRepository,
-    get_test_repository,
     LessonRepository,
-    get_lesson_repository
+    TestRepository,
+    get_lesson_repository,
+    get_test_repository,
 )
 from app.modules.courses.schemas.TestScheme import TestCreate
-from app.modules.courses.exceptions import (
-    NotFoundError,
-    ConflictError
-)
+
+from .BaseService import BaseService
+
 
 class TestService(BaseService):
     def __init__(self, repo: TestRepository, lesson_repo: LessonRepository):
@@ -37,7 +35,7 @@ class TestService(BaseService):
         await self.find_lesson(in_data.lesson_id, False)
         return await super().create(in_data)
 
-    async def get_by_lesson_id(self, lesson_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> List[Test]:
+    async def get_by_lesson_id(self, lesson_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> list[Test]:
         await self.find_lesson(lesson_id, delete_flg)
         tests = await self.repo.get_by_lesson_id(lesson_id, delete_flg, skip, limit)
 
@@ -46,7 +44,7 @@ class TestService(BaseService):
 
         return tests
 
-    async def activate(self, id: UUID) -> Optional[Test]:
+    async def activate(self, id: UUID) -> Test | None:
         test = await self.get_by_id(id, None)
 
         if test.delete_flg:
@@ -57,7 +55,7 @@ class TestService(BaseService):
 
         return await self.repo.activate(id)
 
-    async def deactivate(self, id: UUID) -> Optional[Test]:
+    async def deactivate(self, id: UUID) -> Test | None:
         test = await self.get_by_id(id, None)
 
         if not test.is_active:
@@ -75,7 +73,7 @@ class TestService(BaseService):
 
 
 
-    async def get_all_active(self,  delete_flg: bool | None, skip: int, limit: int) -> List[Test]:
+    async def get_all_active(self,  delete_flg: bool | None, skip: int, limit: int) -> list[Test]:
         res = await self.repo.get_all_active(delete_flg,skip, limit)
 
         if not res:
@@ -85,7 +83,7 @@ class TestService(BaseService):
 
 
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg:bool | None, skip: int, limit: int) -> List[Test]:
+    async def get_by_course_id(self, course_id: UUID, delete_flg:bool | None, skip: int, limit: int) -> list[Test]:
         res = await self.repo.get_by_course_id(course_id, delete_flg, skip, limit)
 
         if not res:
@@ -93,7 +91,7 @@ class TestService(BaseService):
 
         return res
 
-    async def search(self, query: str, delete_flg:bool|None,skip: int, limit: int) -> List[Test]:
+    async def search(self, query: str, delete_flg:bool|None,skip: int, limit: int) -> list[Test]:
         res = await self.repo.search(query,delete_flg, skip, limit)
 
         if not res:

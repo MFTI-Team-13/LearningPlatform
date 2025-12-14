@@ -74,9 +74,9 @@ docker compose -f docker-compose.dev.yml up -d
 
 В Auth Service уже создан пользователь для тестирования:
 
->login: admin
+>username: admin
 > 
->password: Admin123!****
+>password: Admin123!
 
 ## Остановка проекта
 

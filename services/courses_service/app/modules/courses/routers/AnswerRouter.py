@@ -1,18 +1,10 @@
-from typing import List
-
-from fastapi import APIRouter, Depends
 from uuid import UUID
 
-from app.modules.courses.schemas_import import (
-    AnswerCreate,
-    AnswerUpdate,
-    AnswerResponse
-)
-from app.modules.courses.services_import import (
-    AnswerService,
-    get_answer_service
-)
+from fastapi import APIRouter, Depends
+
 from app.modules.courses.exceptions import handle_errors
+from app.modules.courses.schemas_import import AnswerCreate, AnswerResponse, AnswerUpdate
+from app.modules.courses.services_import import AnswerService, get_answer_service
 
 router = APIRouter(prefix="/answer")
 
@@ -25,14 +17,14 @@ async def create_answer(
     return await handle_errors(lambda: service.create(data))
 
 
-@router.post("/createBulk", response_model=List[AnswerResponse])
+@router.post("/createBulk", response_model=list[AnswerResponse])
 async def create_answers_bulk(
-    answers: List[AnswerCreate],
+    answers: list[AnswerCreate],
     service: AnswerService = Depends(get_answer_service),
 ):
     return await handle_errors(lambda: service.create_bulk(answers))
 
-@router.get("/list", response_model=List[AnswerResponse])
+@router.get("/list", response_model=list[AnswerResponse])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,
@@ -62,7 +54,7 @@ async def get_by_question_and_order(
     )
 
 
-@router.post("/getByQuestionId", response_model=List[AnswerResponse])
+@router.post("/getByQuestionId", response_model=list[AnswerResponse])
 async def get_by_question_id(
     question_id: UUID,
     delete_flg: bool | None = None,
@@ -75,7 +67,7 @@ async def get_by_question_id(
     )
 
 
-@router.post("/getCorrectByQuestion", response_model=List[AnswerResponse])
+@router.post("/getCorrectByQuestion", response_model=list[AnswerResponse])
 async def get_correct_answers_by_question(
     question_id: UUID,
     is_correct: bool | None = None,

@@ -1,8 +1,7 @@
-from typing import Optional,List
 from datetime import datetime
-
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.modules.courses.enums import CourseLevel
 from app.modules.courses.schemas.LessonScheme import LessonResponse
@@ -12,7 +11,7 @@ class CourseBase(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
   title: str = Field(..., min_length=5, max_length=200, description="Название курса")
-  description: Optional[str] = Field(None, max_length=1000, description="Описание курса")
+  description: str | None = Field(None, max_length=1000, description="Описание курса")
   level: CourseLevel = Field(default=CourseLevel.BEGINNER, description="Уровень сложности")
   is_published: bool = Field(default=False, description="Публичность курса")
 
@@ -40,10 +39,10 @@ class CourseCreate(CourseBase):
 class CourseUpdate(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
-  title: Optional[str] = Field(None, min_length=5, max_length=200)
-  description: Optional[str] = Field(None, max_length=1000)
-  level: Optional[CourseLevel] = None
-  is_published: Optional[bool] = None
+  title: str | None = Field(None, min_length=5, max_length=200)
+  description: str | None = Field(None, max_length=1000)
+  level: CourseLevel | None = None
+  is_published: bool | None = None
 
   @model_validator(mode='after')
   def validate_at_least_one_field(self):
@@ -57,7 +56,7 @@ class CourseResponse(BaseModel):
 
   id: UUID
   title: str
-  description: Optional[str]
+  description: str | None
   level: CourseLevel
   author_id: UUID
   is_published: bool
@@ -66,4 +65,4 @@ class CourseResponse(BaseModel):
   update_at: datetime
 
 class CourseWithLessonsResponse(CourseResponse):
-  lessons: List['LessonResponse'] = Field(default_factory=list, description="Уроки")
+  lessons: list['LessonResponse'] = Field(default_factory=list, description="Уроки")

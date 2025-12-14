@@ -1,10 +1,10 @@
-from .schemas.CourseScheme import *
-from .schemas.LessonScheme import *
-from .schemas.TestScheme import *
-from .schemas.QuestionScheme import *
 from .schemas.AnswerScheme import *
 from .schemas.CourseReviewScheme import *
+from .schemas.CourseScheme import *
 from .schemas.CourseUserScheme import *
+from .schemas.LessonScheme import *
+from .schemas.QuestionScheme import *
+from .schemas.TestScheme import *
 
 course_schemas = [
     CourseBase, CourseCreate, CourseUpdate, CourseResponse,CourseWithLessonsResponse

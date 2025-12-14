@@ -1,16 +1,11 @@
-from typing import List
-
-from fastapi import APIRouter, Depends
 from uuid import UUID
 
+from fastapi import APIRouter, Depends
+
 from app.modules.courses.enums import ContentType
-from app.modules.courses.schemas_import import (
-    LessonCreate,
-    LessonUpdate,
-    LessonResponse
-)
-from app.modules.courses.services_import import LessonService, get_lesson_service
 from app.modules.courses.exceptions import handle_errors
+from app.modules.courses.schemas_import import LessonCreate, LessonResponse, LessonUpdate
+from app.modules.courses.services_import import LessonService, get_lesson_service
 
 router = APIRouter(prefix="/lesson")
 
@@ -21,7 +16,7 @@ async def create_lesson(
 ):
     return await handle_errors(lambda: service.create(data))
 
-@router.get("/list", response_model=List[LessonResponse])
+@router.get("/list", response_model=list[LessonResponse])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,
@@ -38,7 +33,7 @@ async def get_lesson_by_id(
 ):
     return await handle_errors(lambda: service.get_by_id(lesson_id, delete_flg))
 
-@router.post("/getByCourse", response_model=List[LessonResponse])
+@router.post("/getByCourse", response_model=list[LessonResponse])
 async def list_by_course(
     course_id: UUID,
     delete_flg: bool | None = None,
@@ -57,7 +52,7 @@ async def list_by_course(
 ):
     return await handle_errors(lambda: service.get_by_course_and_order(course_id, order_index,delete_flg))
 
-@router.post("/getByContentType", response_model=List[LessonResponse])
+@router.post("/getByContentType", response_model=list[LessonResponse])
 async def list_by_course(
     content_type: ContentType,
     delete_flg: bool | None = None,
@@ -83,7 +78,7 @@ async def update_course(
 ):
     return await handle_errors(lambda: service.update(lesson_id, data))
 
-@router.post("/search", response_model=List[LessonResponse])
+@router.post("/search", response_model=list[LessonResponse])
 async def search_lessons_in_course(
     course_id: UUID,
     query: str,

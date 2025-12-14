@@ -1,10 +1,10 @@
 # app/common/deps/auth.py
 from __future__ import annotations
 
-from typing import Any, Set, Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status,Security
+from fastapi import Depends, HTTPException, Security, status
 from pydantic import BaseModel
 
 from app.core.security import current_token_payload
@@ -12,7 +12,7 @@ from app.core.security import current_token_payload
 
 class CurrentUser(BaseModel):
     id: UUID
-    roles: Set[str]
+    roles: set[str]
     payload: dict[str, Any]
 
 

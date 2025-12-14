@@ -1,18 +1,10 @@
-from typing import List
-
-from fastapi import APIRouter, Depends
 from uuid import UUID
 
-from app.modules.courses.schemas_import import (
-    TestCreate,
-    TestUpdate,
-    TestResponse
-)
-from app.modules.courses.services_import import (
-    TestService,
-    get_test_service
-)
+from fastapi import APIRouter, Depends
+
 from app.modules.courses.exceptions import handle_errors
+from app.modules.courses.schemas_import import TestCreate, TestResponse, TestUpdate
+from app.modules.courses.services_import import TestService, get_test_service
 
 router = APIRouter(prefix="/test")
 
@@ -23,7 +15,7 @@ async def create_test(
 ):
     return await handle_errors(lambda: service.create(data))
 
-@router.get("/list", response_model=List[TestResponse])
+@router.get("/list", response_model=list[TestResponse])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,
@@ -40,7 +32,7 @@ async def get_lesson_by_id(
 ):
     return await handle_errors(lambda: service.get_by_id(id, delete_flg))
 
-@router.post("/getByLesson", response_model=List[TestResponse])
+@router.post("/getByLesson", response_model=list[TestResponse])
 async def list_by_course(
     lesson_id: UUID,
     delete_flg: bool | None = None,
@@ -51,7 +43,7 @@ async def list_by_course(
     return await handle_errors(lambda: service.get_by_lesson_id(lesson_id, delete_flg, skip, limit))
 
 
-@router.get("/active", response_model=List[TestResponse])
+@router.get("/active", response_model=list[TestResponse])
 async def list_active_tests(
     delete_flg: bool | None = None,
     skip: int = 0,
@@ -63,7 +55,7 @@ async def list_active_tests(
     )
 
 
-@router.get("/getByCourse", response_model=List[TestResponse])
+@router.get("/getByCourse", response_model=list[TestResponse])
 async def get_tests_by_course(
     course_id: UUID,
     delete_flg: bool | None = None,
@@ -76,7 +68,7 @@ async def get_tests_by_course(
     )
 
 
-@router.get("/search", response_model=List[TestResponse])
+@router.get("/search", response_model=list[TestResponse])
 async def search_tests(
     query: str,
     delete_flg: bool | None = None,

@@ -1,15 +1,12 @@
-from typing import List, Optional
 from datetime import datetime
-
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, and_, func, desc
-from sqlalchemy.orm import selectinload
+
 from fastapi import Depends
+from sqlalchemy import and_, desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.courses.models_import import CourseUser,Course
 from app.common.db.session import get_session
-
+from app.modules.courses.models_import import Course, CourseUser
 
 
 class CourseUserRepository:
@@ -23,7 +20,7 @@ class CourseUserRepository:
         await self.db.refresh(course_student)
         return course_student
 
-    async def get_by_id(self, id: UUID, delete_flg: bool | None) -> Optional[CourseUser]:
+    async def get_by_id(self, id: UUID, delete_flg: bool | None) -> CourseUser | None:
         query = select(CourseUser).where(CourseUser.id == id)
 
         if delete_flg is not None:
@@ -33,7 +30,7 @@ class CourseUserRepository:
 
         return result.scalar_one_or_none()
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[CourseUser]:
+    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[CourseUser]:
         query = select(CourseUser).where(CourseUser.course_id == course_id)
 
         if delete_flg is not None:
@@ -47,7 +44,7 @@ class CourseUserRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_by_user_id(self, user_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[CourseUser]:
+    async def get_by_user_id(self, user_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[CourseUser]:
         query = select(CourseUser).where(CourseUser.user_id == user_id)
 
         if delete_flg is not None:
@@ -61,7 +58,7 @@ class CourseUserRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg: bool | None) -> Optional[CourseUser]:
+    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg: bool | None) -> CourseUser | None:
         query = select(CourseUser).where(
             and_(
                 CourseUser.course_id == course_id,
@@ -76,7 +73,7 @@ class CourseUserRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_active_by_user_id(self, user_id: UUID, delete_flg: bool | None, skip: int, limit: int) ->List[CourseUser]:
+    async def get_active_by_user_id(self, user_id: UUID, delete_flg: bool | None, skip: int, limit: int) ->list[CourseUser]:
         query = select(CourseUser).where(
             and_(
                 CourseUser.is_active == True,
@@ -95,7 +92,7 @@ class CourseUserRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_with_courseUser_and_course(self,user_id: UUID,course_id: UUID | None,delete_flg: bool | None) -> List[CourseUser]:
+    async def get_with_courseUser_and_course(self,user_id: UUID,course_id: UUID | None,delete_flg: bool | None) -> list[CourseUser]:
         query = (
           select(CourseUser, Course)
           .join(Course)
@@ -119,7 +116,7 @@ class CourseUserRepository:
         result = await self.db.execute(query)
         return result.all()
 
-    async def update(self, id: UUID, course_student_data: dict) -> Optional[CourseUser]:
+    async def update(self, id: UUID, course_student_data: dict) -> CourseUser | None:
         course_student = await self.get_by_id(id, False)
 
         if not course_student:
@@ -157,7 +154,7 @@ class CourseUserRepository:
         await self.db.commit()
         return True
 
-    async def activate(self, id: UUID) -> Optional[CourseUser]:
+    async def activate(self, id: UUID) -> CourseUser | None:
         course_student = await self.get_by_id(id, False)
 
         if not course_student:
@@ -167,7 +164,7 @@ class CourseUserRepository:
         await self.db.commit()
         return course_student
 
-    async def deactivate(self, id: UUID) -> Optional[CourseUser]:
+    async def deactivate(self, id: UUID) -> CourseUser | None:
         course_student = await self.get_by_id(id, None)
 
         if not course_student:
@@ -177,7 +174,7 @@ class CourseUserRepository:
         await self.db.commit()
         return course_student
 
-    async def get_all(self, delete_flg: bool | None, skip: int, limit: int) -> List[CourseUser]:
+    async def get_all(self, delete_flg: bool | None, skip: int, limit: int) -> list[CourseUser]:
         query = select(CourseUser)
 
         if delete_flg is not None:
@@ -188,7 +185,7 @@ class CourseUserRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_all_active(self, is_active:bool, delete_flg: bool | None, skip: int, limit: int) -> List[CourseUser]:
+    async def get_all_active(self, is_active:bool, delete_flg: bool | None, skip: int, limit: int) -> list[CourseUser]:
         query = select(CourseUser).where(CourseUser.is_active == is_active)
 
         if delete_flg is not None:

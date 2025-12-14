@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer
 
 from app.common.db.base import Base
 
@@ -10,7 +10,7 @@ class CoursesProgress(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=False)
     course_id = Column(Integer, nullable=False)
-    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime, default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime, nullable=True)
     progress_percentage = Column(Integer, default=0)
 
@@ -26,7 +26,7 @@ class LessonsProgress(Base):
     lesson_id = Column(Integer, nullable=False)
     course_progress_id = Column(Integer, ForeignKey('courses_progress.id'), nullable=False)
     completed = Column(Boolean, default=False)
-    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime, default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime, nullable=True)
 
     #user = relationship("User", back_populates="lesson_progresses")

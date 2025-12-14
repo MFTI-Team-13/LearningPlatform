@@ -1,13 +1,12 @@
-from typing import Optional, List
 from datetime import datetime
-
 from uuid import UUID
+
 from fastapi import Depends
-from sqlalchemy import select, and_, func
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.courses.models_import import Answer
 from app.common.db.session import get_session
+from app.modules.courses.models_import import Answer
 
 
 class AnswerRepository:
@@ -21,7 +20,7 @@ class AnswerRepository:
       await self.db.refresh(answer)
       return answer
 
-  async def create_bulk(self, answers_data: List[dict]) -> List[Answer]:
+  async def create_bulk(self, answers_data: list[dict]) -> list[Answer]:
       answers = [Answer(**data) for data in answers_data]
       self.db.add_all(answers)
       await self.db.commit()
@@ -31,7 +30,7 @@ class AnswerRepository:
 
       return answers
 
-  async def get_by_id(self, id: UUID, delete_flg: bool) -> Optional[Answer]:
+  async def get_by_id(self, id: UUID, delete_flg: bool) -> Answer | None:
       query = select(Answer).where(Answer.id == id)
 
       if delete_flg is not None:
@@ -41,7 +40,7 @@ class AnswerRepository:
 
       return result.scalar_one_or_none()
 
-  async def get_by_question_id(self, question_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Answer]:
+  async def get_by_question_id(self, question_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[Answer]:
       query = select(Answer).where(Answer.question_id == question_id)
 
       if delete_flg is not None:
@@ -55,7 +54,7 @@ class AnswerRepository:
       result = await self.db.execute(query)
       return result.scalars().all()
 
-  async def get_by_question_and_order(self, question_id: UUID, order_index: int, delete_flg: bool | None) -> Optional[Answer]:
+  async def get_by_question_and_order(self, question_id: UUID, order_index: int, delete_flg: bool | None) -> Answer | None:
       query = (
           select(Answer)
           .where(
@@ -72,7 +71,7 @@ class AnswerRepository:
       result = await self.db.execute(query)
       return result.scalar_one_or_none()
 
-  async def get_all(self, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Answer]:
+  async def get_all(self, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[Answer]:
       query = select(Answer)
 
       if delete_flg is not None:
@@ -83,7 +82,7 @@ class AnswerRepository:
       result = await self.db.execute(query)
       return result.scalars().all()
 
-  async def get_correct_answers_by_question(self, question_id: UUID, is_correct: bool | None, delete_flg: bool | None,skip: int = 0, limit: int = 100) -> List[Answer]:
+  async def get_correct_answers_by_question(self, question_id: UUID, is_correct: bool | None, delete_flg: bool | None,skip: int = 0, limit: int = 100) -> list[Answer]:
       query = select(Answer).where(Answer.question_id == question_id)
 
       if delete_flg is not None:
@@ -100,7 +99,7 @@ class AnswerRepository:
       result = await self.db.execute(query)
       return result.scalars().all()
 
-  async def update(self, answer_id: UUID, answer_data: dict) -> Optional[Answer]:
+  async def update(self, answer_id: UUID, answer_data: dict) -> Answer | None:
       answer = await self.get_by_id(answer_id, False)
 
       if not answer:

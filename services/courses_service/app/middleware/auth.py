@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Annotated, Callable, Awaitable
+from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, Request

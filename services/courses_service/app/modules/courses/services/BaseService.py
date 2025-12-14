@@ -1,10 +1,7 @@
 from uuid import UUID
-from fastapi import HTTPException, status
 
-from app.modules.courses.exceptions import (
-    NotFoundError,
-    ConflictError
-)
+from app.modules.courses.exceptions import ConflictError, NotFoundError
+
 
 class BaseService:
     def __init__(self, repo):
@@ -16,13 +13,13 @@ class BaseService:
     async def get_all(self, delete_flg:bool | None, skip: int, limit: int):
         res = await self.repo.get_all(delete_flg, skip, limit)
         if not res:
-            raise NotFoundError(f"Объекты не найден")
+            raise NotFoundError("Объекты не найден")
         return res
 
     async def get_by_id(self, id: UUID, delete_flg:bool | None):
         res = await self.repo.get_by_id(id, delete_flg)
         if res is None:
-            raise NotFoundError(f"Объект не найден")
+            raise NotFoundError("Объект не найден")
         return res
 
 

@@ -1,20 +1,18 @@
-from typing import List, Optional
-
-from fastapi import Depends, HTTPException, status
 from uuid import UUID
 
-from .BaseService import BaseService
+from fastapi import Depends
+
+from app.modules.courses.exceptions import NotFoundError
 from app.modules.courses.models_import import Lesson
 from app.modules.courses.repositories_import import (
-    LessonRepository,
-    get_lesson_repository,
     CourseRepository,
-    get_course_repository
+    LessonRepository,
+    get_course_repository,
+    get_lesson_repository,
 )
 from app.modules.courses.schemas_import import LessonCreate
-from app.modules.courses.exceptions import (
-    NotFoundError
-)
+
+from .BaseService import BaseService
 
 
 class LessonService(BaseService):
@@ -41,7 +39,7 @@ class LessonService(BaseService):
 
         return await super().create(in_data)
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> List[Lesson]:
+    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> list[Lesson]:
         await self.find_course(course_id, delete_flg)
         lessons = await self.repo.get_by_course_id(course_id, delete_flg, skip, limit)
 
@@ -50,7 +48,7 @@ class LessonService(BaseService):
 
         return lessons
 
-    async def get_by_course_and_order(self, course_id: UUID, order_index: int,delete_flg: bool | None) -> Optional[Lesson]:
+    async def get_by_course_and_order(self, course_id: UUID, order_index: int,delete_flg: bool | None) -> Lesson | None:
         await self.find_course(course_id, delete_flg)
         lesson = await self.repo.get_by_course_and_order(course_id, order_index,delete_flg)
 
@@ -59,7 +57,7 @@ class LessonService(BaseService):
 
         return lesson
 
-    async def get_by_content_type(self, content_type,delete_flg: bool | None, skip: int, limit: int) -> List[Lesson]:
+    async def get_by_content_type(self, content_type,delete_flg: bool | None, skip: int, limit: int) -> list[Lesson]:
         lessons = await self.repo.get_by_content_type(content_type,delete_flg, skip, limit)
 
         if not lessons:
@@ -77,7 +75,7 @@ class LessonService(BaseService):
 
         return max_index
 
-    async def search_in_course(self, course_id: UUID, query: str, delete_flg: bool | None, skip: int, limit: int) -> List[Lesson]:
+    async def search_in_course(self, course_id: UUID, query: str, delete_flg: bool | None, skip: int, limit: int) -> list[Lesson]:
         await self.find_course(course_id, delete_flg)
         lessons = await self.repo.search_in_course(course_id,query,delete_flg, skip, limit)
 

@@ -1,13 +1,14 @@
-from pydantic import BaseModel, field_validator, ConfigDict, model_validator
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+
 from services.courses_service.app.modules.courses.enums import UserRole
 
 
 class UserBase(BaseModel):
-    display_name: Optional[str] = None
-    login: Optional[str] = None
+    display_name: str | None = None
+    login: str | None = None
     role: UserRole
 
     @field_validator('display_name', 'login')
@@ -35,9 +36,9 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    display_name: Optional[str] = None
-    login: Optional[str] = None
-    role: Optional[UserRole] = None
+    display_name: str | None = None
+    login: str | None = None
+    role: UserRole | None = None
 
     @field_validator('display_name', 'login')
     @classmethod
@@ -70,12 +71,12 @@ class UserUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     id: UUID
-    display_name: Optional[str] = None
-    login: Optional[str] = None
+    display_name: str | None = None
+    login: str | None = None
     role: UserRole
     deleted_flg: bool = False
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

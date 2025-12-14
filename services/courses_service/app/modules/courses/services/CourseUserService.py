@@ -1,23 +1,22 @@
-from typing import Optional, List
-
-from fastapi import Depends, HTTPException
 from uuid import UUID
 
-from .BaseService import BaseService
+from fastapi import Depends
+
+from app.modules.courses.exceptions import ConflictError, NotFoundError
 from app.modules.courses.models_import import CourseUser
 from app.modules.courses.repositories_import import (
-    CourseUserRepository,
-    get_course_user_repository,
     CourseRepository,
-    get_course_repository
+    CourseUserRepository,
+    get_course_repository,
+    get_course_user_repository,
 )
 from app.modules.courses.schemas.CourseUserScheme import (
-    CourseUserCreate,CourseResponse, CourseUserWithCourseResponse
+    CourseUserCreate,
+    CourseUserWithCourseResponse,
 )
-from app.modules.courses.exceptions import (
-    NotFoundError,
-    ConflictError
-)
+
+from .BaseService import BaseService
+
 
 class CourseUserService(BaseService):
 
@@ -40,32 +39,32 @@ class CourseUserService(BaseService):
         await self.find_course(in_data.course_id, delete_flg=False)
         return await self.repo.create(in_data.model_dump())
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+    async def get_by_course_id(self, course_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> list[CourseUser]:
         await self.find_course(course_id, delete_flg=delete_flg)
 
         res = await self.repo.get_by_course_id(course_id, delete_flg, skip, limit)
 
         if not res:
-          raise NotFoundError(f"Назначенные курсы не найдены")
+          raise NotFoundError("Назначенные курсы не найдены")
 
         return res
 
-    async def get_by_user_id(self, user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+    async def get_by_user_id(self, user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> list[CourseUser]:
         res = await self.repo.get_by_user_id(user_id, delete_flg, skip, limit)
 
         if not res:
-            raise NotFoundError(f"Назначенные курсы не найдены")
+            raise NotFoundError("Назначенные курсы не найдены")
 
         return res
 
-    async def get_with_courseUser_and_course(self, user_id: UUID,course_id: UUID|None, delete_flg:bool | None) -> List[CourseUser]:
+    async def get_with_courseUser_and_course(self, user_id: UUID,course_id: UUID|None, delete_flg:bool | None) -> list[CourseUser]:
         if course_id is not None:
             await self.find_course(course_id, delete_flg=delete_flg)
 
         res = await self.repo.get_with_courseUser_and_course(user_id, course_id,delete_flg)
 
         if not res:
-            raise NotFoundError(f"Назначенные курсы не найдены")
+            raise NotFoundError("Назначенные курсы не найдены")
         result_list = []
         for course_user, course in res:
           # Преобразуем в словарь с помощью .dict()
@@ -93,28 +92,28 @@ class CourseUserService(BaseService):
         # Преобразуем каждый элемент в Pydantic модель
         return [CourseUserWithCourseResponse(**item) for item in result_list]
 
-    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg:bool | None) -> Optional[CourseUser]:
+    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg:bool | None) -> CourseUser | None:
         await self.find_course(course_id, delete_flg=delete_flg)
 
         res = await self.repo.get_by_course_and_user_id(course_id, user_id, delete_flg)
         if not res:
-            raise NotFoundError(f"Назначенные курсы не найдены")
+            raise NotFoundError("Назначенные курсы не найдены")
 
         return res
 
-    async def get_active_by_user_id(self, user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+    async def get_active_by_user_id(self, user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> list[CourseUser]:
         res = await self.repo.get_active_by_user_id(user_id, delete_flg,skip, limit)
 
         if not res:
-          raise NotFoundError(f"Назначенные курсы не найдены")
+          raise NotFoundError("Назначенные курсы не найдены")
 
         return res
 
-    async def get_all_active(self, is_active:bool,delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+    async def get_all_active(self, is_active:bool,delete_flg:bool | None,skip: int, limit: int) -> list[CourseUser]:
         res =  await self.repo.get_active(is_active, delete_flg, skip, limit)
 
         if not res:
-          raise NotFoundError(f"Назначенные курсы не найдены")
+          raise NotFoundError("Назначенные курсы не найдены")
 
         return res
 

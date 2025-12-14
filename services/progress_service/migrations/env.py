@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from logging.config import fileConfig
 
 from alembic import context

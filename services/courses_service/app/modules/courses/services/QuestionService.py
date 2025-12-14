@@ -1,21 +1,18 @@
-from typing import List, Optional
-
-from fastapi import Depends, HTTPException
 from uuid import UUID
 
-from .BaseService import BaseService
+from fastapi import Depends, HTTPException
+
+from app.modules.courses.exceptions import ConflictError, NotFoundError
 from app.modules.courses.models_import import Question
 from app.modules.courses.repositories_import import (
     QuestionRepository,
-    get_question_repository,
     TestRepository,
-    get_test_repository
+    get_question_repository,
+    get_test_repository,
 )
 from app.modules.courses.schemas.QuestionScheme import QuestionCreate
-from app.modules.courses.exceptions import (
-    NotFoundError,
-    ConflictError
-)
+
+from .BaseService import BaseService
 
 
 class QuestionService(BaseService):
@@ -43,7 +40,7 @@ class QuestionService(BaseService):
 
         return await super().create(in_data)
 
-    async def get_by_test_id(self, test_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> List[Question]:
+    async def get_by_test_id(self, test_id: UUID, delete_flg: bool | None, skip: int, limit: int) -> list[Question]:
         await self.find_test(test_id, delete_flg)
         question = await self.repo.get_by_test_id(test_id, delete_flg, skip, limit)
 
@@ -52,7 +49,7 @@ class QuestionService(BaseService):
 
         return question
 
-    async def get_by_test_and_order(self, test_id: UUID, order_index: int,delete_flg: bool | None) -> Optional[Question]:
+    async def get_by_test_and_order(self, test_id: UUID, order_index: int,delete_flg: bool | None) -> Question | None:
         await self.find_test(test_id, delete_flg)
         question = await self.repo.get_by_test_and_order(test_id, order_index,delete_flg)
 
@@ -61,7 +58,7 @@ class QuestionService(BaseService):
 
         return question
 
-    async def get_by_question_type(self, question_type,delete_flg: bool, skip: int, limit: int) -> List[Question]:
+    async def get_by_question_type(self, question_type,delete_flg: bool, skip: int, limit: int) -> list[Question]:
         question = await self.repo.get_by_question_type(question_type,delete_flg, skip, limit)
 
         if not question:
@@ -79,7 +76,7 @@ class QuestionService(BaseService):
 
         return max_index
 
-    async def search_in_test(self, test_id: UUID, query: str,delete_flg: bool | None, skip: int, limit: int) -> List[Question]:
+    async def search_in_test(self, test_id: UUID, query: str,delete_flg: bool | None, skip: int, limit: int) -> list[Question]:
         await self.find_test(test_id, delete_flg)
         questions = await self.repo.search_in_test(test_id,query,delete_flg, skip, limit)
 
@@ -88,7 +85,7 @@ class QuestionService(BaseService):
 
         return questions
 
-    async def create_bulk(self, questions: list[QuestionCreate]) -> List[Question]:
+    async def create_bulk(self, questions: list[QuestionCreate]) -> list[Question]:
         if not questions:
             raise ConflictError("Список вопросов пуст")
 

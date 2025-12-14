@@ -1,12 +1,10 @@
+from .models.Answer import Answer
 from .models.Course import Course
 from .models.CourseReview import CourseReview
-from .models.Lesson import Lesson
-from .models.Test import Test
-from .models.Question import Question
-from .models.Answer import Answer
 from .models.CourseUser import CourseUser
-
-
+from .models.Lesson import Lesson
+from .models.Question import Question
+from .models.Test import Test
 
 __all__ = [
     'Course',

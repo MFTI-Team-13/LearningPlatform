@@ -1,7 +1,8 @@
-from fastapi import HTTPException, status
 import logging
-from sqlalchemy.exc import IntegrityError
+
 import asyncpg
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 

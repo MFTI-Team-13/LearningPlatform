@@ -1,8 +1,7 @@
-from typing import Optional
 from datetime import datetime
-
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.modules.courses.enums import ContentType
 
@@ -11,11 +10,11 @@ class LessonBase(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
   title: str = Field(..., min_length=3, max_length=255, description="Название урока")
-  short_description: Optional[str] = Field(None, max_length=500, description="Краткое описание")
+  short_description: str | None = Field(None, max_length=500, description="Краткое описание")
   content_type: ContentType = Field(default=ContentType.TEXT, description="Тип контента")
   order_index: int = Field(..., ge=0, le=1000, description="Порядковый номер")
-  text_content: Optional[str] = Field(None, description="Текстовый контент")
-  content_url: Optional[str] = Field(None, max_length=500, description="URL видео")
+  text_content: str | None = Field(None, description="Текстовый контент")
+  content_url: str | None = Field(None, max_length=500, description="URL видео")
 
   @field_validator('title')
   @classmethod
@@ -33,7 +32,7 @@ class LessonBase(BaseModel):
 
   @field_validator('content_url')
   @classmethod
-  def validate_video_url(cls, v: Optional[str], info) -> Optional[str]:
+  def validate_video_url(cls, v: str | None, info) -> str | None:
     if v and info.data.get('content_type') == ContentType.VIDEO:
       if not v.startswith(('http://', 'https://')):
         raise ValueError('URL видео должен начинаться с http:// или https://')
@@ -57,12 +56,12 @@ class LessonCreate(LessonBase):
 class LessonUpdate(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
-  title: Optional[str] = Field(None, min_length=3, max_length=255)
-  short_description: Optional[str] = Field(None, max_length=500)
-  content_type: Optional[ContentType] = None
-  order_index: Optional[int] = Field(None, ge=0, le=1000)
-  text_content: Optional[str] = None
-  content_url: Optional[str] = Field(None, max_length=500)
+  title: str | None = Field(None, min_length=3, max_length=255)
+  short_description: str | None = Field(None, max_length=500)
+  content_type: ContentType | None = None
+  order_index: int | None = Field(None, ge=0, le=1000)
+  text_content: str | None = None
+  content_url: str | None = Field(None, max_length=500)
 
   @model_validator(mode='after')
   def validate_at_least_one_field(self):
@@ -88,7 +87,7 @@ class LessonUpdate(BaseModel):
 
   @field_validator('content_url')
   @classmethod
-  def validate_video_url(cls, v: Optional[str], info) -> Optional[str]:
+  def validate_video_url(cls, v: str | None, info) -> str | None:
     if v and info.data.get('content_type') == ContentType.VIDEO:
       if not v.startswith(('http://', 'https://')):
         raise ValueError('URL видео должен начинаться с http:// или https://')
@@ -101,11 +100,11 @@ class LessonResponse(BaseModel):
 
   id: UUID
   title: str
-  short_description: Optional[str]
+  short_description: str | None
   content_type: ContentType
   order_index: int
-  text_content: Optional[str]
-  content_url: Optional[str]
+  text_content: str | None
+  content_url: str | None
   course_id: UUID
   delete_flg: bool
   created_at: datetime

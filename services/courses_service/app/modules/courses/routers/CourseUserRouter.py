@@ -1,20 +1,13 @@
-from typing import List
-
-from fastapi import APIRouter, Depends
 from uuid import UUID
 
+from fastapi import APIRouter, Depends
+
+from app.modules.courses.exceptions import handle_errors
 from app.modules.courses.schemas_import import (
     CourseUserCreate,
-    CourseUserUpdate,
     CourseUserResponse,
-    CourseUserWithCourseResponse,
-CourseUserListResponse
 )
-from app.modules.courses.services_import import (
-    CourseUserService,
-    get_course_user_service
-)
-from app.modules.courses.exceptions import handle_errors
+from app.modules.courses.services_import import CourseUserService, get_course_user_service
 
 router = APIRouter(prefix="/courseUser")
 
@@ -26,7 +19,7 @@ async def create_course_user(
 ):
     return await handle_errors(lambda: service.create(data))
 
-@router.get("/list", response_model=List[CourseUserResponse])
+@router.get("/list", response_model=list[CourseUserResponse])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,
@@ -45,7 +38,7 @@ async def get_course_user_by_id(
     return await handle_errors(lambda: service.get_by_id(id, delete_flg))
 
 
-@router.post("/getByCourse", response_model=List[CourseUserResponse])
+@router.post("/getByCourse", response_model=list[CourseUserResponse])
 async def get_by_course(
     course_id: UUID,
     delete_flg: bool | None = None,
@@ -56,7 +49,7 @@ async def get_by_course(
     return await handle_errors(lambda: service.get_by_course_id(course_id, delete_flg, skip, limit))
 
 
-@router.post("/getByUser", response_model=List[CourseUserResponse])
+@router.post("/getByUser", response_model=list[CourseUserResponse])
 async def get_by_user(
     user_id: UUID,
     delete_flg: bool | None = None,
@@ -77,7 +70,7 @@ async def get_by_course_and_user(
     return await handle_errors(lambda: service.get_by_course_and_user_id(course_id, user_id, delete_flg))
 
 
-@router.post("/getActiveByUser", response_model=List[CourseUserResponse])
+@router.post("/getActiveByUser", response_model=list[CourseUserResponse])
 async def get_active_by_user(
     user_id: UUID,
     delete_flg: bool | None = None,

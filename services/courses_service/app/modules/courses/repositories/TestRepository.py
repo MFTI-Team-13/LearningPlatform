@@ -1,13 +1,12 @@
-from typing import Optional, List
 from datetime import datetime
-
 from uuid import UUID
+
 from fastapi import Depends
-from sqlalchemy import select, and_, or_
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.courses.models_import import Test,Lesson
 from app.common.db.session import get_session
+from app.modules.courses.models_import import Lesson, Test
 
 
 class TestRepository:
@@ -21,7 +20,7 @@ class TestRepository:
         await self.db.refresh(test)
         return test
 
-    async def get_by_id(self, id: UUID, delete_flg: bool) -> Optional[Test]:
+    async def get_by_id(self, id: UUID, delete_flg: bool) -> Test | None:
         query = select(Test).where(Test.id == id)
 
         if delete_flg is not None:
@@ -31,7 +30,7 @@ class TestRepository:
 
         return result.scalar_one_or_none()
 
-    async def get_by_lesson_id(self, lesson_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Test]:
+    async def get_by_lesson_id(self, lesson_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[Test]:
         query = select(Test).where(Test.lesson_id == lesson_id)
 
         if delete_flg is not None:
@@ -45,7 +44,7 @@ class TestRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_all(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> List[Test]:
+    async def get_all(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> list[Test]:
         query = select(Test)
 
         if delete_flg is not None:
@@ -56,7 +55,7 @@ class TestRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def activate(self, test_id: UUID) -> Optional[Test]:
+    async def activate(self, test_id: UUID) -> Test | None:
         test = await self.get_by_id(test_id, False)
 
         if not test:
@@ -66,7 +65,7 @@ class TestRepository:
         await self.db.commit()
         return test
 
-    async def deactivate(self, test_id: UUID) -> Optional[Test]:
+    async def deactivate(self, test_id: UUID) -> Test | None:
         test = await self.get_by_id(test_id, None)
 
         if not test:
@@ -76,7 +75,7 @@ class TestRepository:
         await self.db.commit()
         return test
 
-    async def get_all_active(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> List[Test]:
+    async def get_all_active(self, delete_flg: bool, skip: int = 0, limit: int = 100) -> list[Test]:
         query = select(Test).where(Test.is_active == True)
 
         if delete_flg is not None:
@@ -87,7 +86,7 @@ class TestRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_by_course_id(self, course_id: UUID,delete_flg:bool, skip: int = 0, limit: int = 100) -> List[Test]:
+    async def get_by_course_id(self, course_id: UUID,delete_flg:bool, skip: int = 0, limit: int = 100) -> list[Test]:
         query = (
             select(Test)
             .join(Lesson, Test.lesson_id == Lesson.id)
@@ -107,7 +106,7 @@ class TestRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def update(self, test_id: UUID, test_data: dict) -> Optional[Test]:
+    async def update(self, test_id: UUID, test_data: dict) -> Test | None:
         test = await self.get_by_id(test_id, False)
 
         if not test:
@@ -143,7 +142,7 @@ class TestRepository:
         await self.db.commit()
         return True
 
-    async def search(self, search_term: str,delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[Test]:
+    async def search(self, search_term: str,delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[Test]:
         query = select(Test).where(
             or_(
                 Test.title.ilike(f"%{search_term}%"),

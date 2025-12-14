@@ -1,20 +1,18 @@
-from typing import Optional, List
 from uuid import UUID
 
-from fastapi import Depends
-from sqlalchemy import select, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from models.user import User
-from enums.course_enums import UserRole
 from database import get_session
+from enums.course_enums import UserRole
+from fastapi import Depends
+from models.user import User
+from sqlalchemy import and_, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, user_id: UUID, include_deleted: bool = True) -> Optional[User]:
+    async def get_by_id(self, user_id: UUID, include_deleted: bool = True) -> User | None:
         query = select(User).where(User.id == user_id)
 
         if not include_deleted:
@@ -23,7 +21,7 @@ class UserRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_by_login(self, login: str, include_deleted: bool = True) -> Optional[User]:
+    async def get_by_login(self, login: str, include_deleted: bool = True) -> User | None:
         query = select(User).where(User.login == login)
 
         if not include_deleted:
@@ -32,7 +30,7 @@ class UserRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_by_display_name(self, display_name: str, include_deleted: bool = False) -> Optional[User]:
+    async def get_by_display_name(self, display_name: str, include_deleted: bool = False) -> User | None:
         query = select(User).where(User.display_name == display_name)
 
         if not include_deleted:
@@ -45,7 +43,7 @@ class UserRepository:
         user = await self.get_by_login(login)
         return user is not None
 
-    async def get_all(self, skip: int = 0, limit: int = 100, include_deleted: bool = False) -> List[User]:
+    async def get_all(self, skip: int = 0, limit: int = 100, include_deleted: bool = False) -> list[User]:
         query = select(User).order_by(User.created_at.desc())
 
         if not include_deleted:
@@ -57,7 +55,7 @@ class UserRepository:
         return result.scalars().all()
 
     async def get_by_role(self, role: UserRole, skip: int = 0, limit: int = 100,
-                                                include_deleted: bool = False) -> List[User]:
+                                                include_deleted: bool = False) -> list[User]:
         query = select(User).where(User.role == role)
 
         if not include_deleted:
@@ -76,7 +74,7 @@ class UserRepository:
         await self.db.refresh(user)
         return user
 
-    async def update(self, user_id: UUID, user_data: dict) -> Optional[User]:
+    async def update(self, user_id: UUID, user_data: dict) -> User | None:
         user = await self.get_by_id(user_id)
 
         if not user:
@@ -121,7 +119,7 @@ class UserRepository:
         return True
 
     async def search_users(self, search_term: str, skip: int = 0, limit: int = 100,
-                                                 include_deleted: bool = False) -> List[User]:
+                                                 include_deleted: bool = False) -> list[User]:
         query = select(User).where(
             or_(
                 User.display_name.ilike(f"%{search_term}%"),
@@ -148,7 +146,7 @@ class UserRepository:
         await self.db.commit()
         return True
 
-    async def count_users(self, role: Optional[UserRole] = None, include_deleted: bool = False) -> int:
+    async def count_users(self, role: UserRole | None = None, include_deleted: bool = False) -> int:
         query = select(User)
 
         if role:
@@ -161,7 +159,7 @@ class UserRepository:
         users = result.scalars().all()
         return len(users)
 
-    async def get_users_created_in_period(self, start_date, end_date, include_deleted: bool = False) -> List[User]:
+    async def get_users_created_in_period(self, start_date, end_date, include_deleted: bool = False) -> list[User]:
         query = select(User).where(
             and_(
                 User.created_at >= start_date,

@@ -5,8 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.api.main_router import main_router
-from app.common.db.session import engine
 from app.common.db.base import Base
+from app.common.db.session import engine
 from app.middleware.auth import setup_auth_middleware
 
 

@@ -1,18 +1,14 @@
-from typing import List
-
-from fastapi import APIRouter, Depends
 from uuid import UUID
 
+from fastapi import APIRouter, Depends
+
+from app.modules.courses.exceptions import handle_errors
 from app.modules.courses.schemas_import import (
     CourseReviewCreate,
+    CourseReviewResponse,
     CourseReviewUpdate,
-    CourseReviewResponse
 )
-from app.modules.courses.services_import import (
-    CourseReviewService,
-    get_course_review_service
-)
-from app.modules.courses.exceptions import handle_errors
+from app.modules.courses.services_import import CourseReviewService, get_course_review_service
 
 router = APIRouter(prefix="/courseReview")
 
@@ -34,7 +30,7 @@ async def get_review_by_id(
     return await handle_errors(lambda: service.get_by_id(review_id, delete_flg))
 
 
-@router.post("/getByCourse", response_model=List[CourseReviewResponse])
+@router.post("/getByCourse", response_model=list[CourseReviewResponse])
 async def get_by_course(
     course_id: UUID,
     delete_flg: bool | None = None,
@@ -45,7 +41,7 @@ async def get_by_course(
     return await handle_errors(lambda: service.get_by_course_id(course_id, delete_flg, skip, limit))
 
 
-@router.post("/getByUser", response_model=List[CourseReviewResponse])
+@router.post("/getByUser", response_model=list[CourseReviewResponse])
 async def get_by_user(
     user_id: UUID,
     delete_flg: bool | None = None,
@@ -66,7 +62,7 @@ async def get_by_course_and_user(
     return await handle_errors(lambda: service.get_by_course_and_user_id(course_id, user_id, delete_flg))
 
 
-@router.post("/getByRating", response_model=List[CourseReviewResponse])
+@router.post("/getByRating", response_model=list[CourseReviewResponse])
 async def get_by_rating(
     course_id: UUID,
     rating: int,
@@ -102,7 +98,7 @@ async def rating_distribution(
     return await handle_errors(lambda: service.get_rating_distribution(course_id))
 
 
-@router.post("/search", response_model=List[CourseReviewResponse])
+@router.post("/search", response_model=list[CourseReviewResponse])
 async def search_in_comments(
     course_id: UUID,
     query: str,
@@ -143,7 +139,7 @@ async def unpublish(
 ):
     return await handle_errors(lambda: service.unpublish(id))
 
-@router.get("/list", response_model=List[CourseReviewResponse])
+@router.get("/list", response_model=list[CourseReviewResponse])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,

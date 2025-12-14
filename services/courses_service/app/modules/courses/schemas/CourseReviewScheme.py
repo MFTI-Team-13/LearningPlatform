@@ -35,7 +35,7 @@ class CourseReviewBase(BaseModel):
 
 class CourseReviewCreate(CourseReviewBase):
   course_id: UUID = Field(..., description="ID курса")
-  user_id: UUID = Field(..., description="ID пользователя")
+  pass
 
 
 class CourseReviewUpdate(BaseModel):
@@ -64,8 +64,8 @@ class CourseReviewResponse(BaseModel):
   course_id: UUID
   user_id: UUID
   delete_flg: bool
-  created_at: datetime
-  updated_at: datetime
+  create_at: datetime
+  update_at: datetime
 
 
 class CourseReviewWithCourse(CourseReviewResponse):

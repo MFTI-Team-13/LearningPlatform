@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException
 from uuid import UUID
 
 from .BaseService import BaseService
+from .BaseAccessCheckerCourse import BaseAccessCheckerCourse
 from app.modules.courses.models_import import CourseUser
 from app.modules.courses.repositories_import import (
     CourseUserRepository,
@@ -18,30 +19,43 @@ from app.modules.courses.exceptions import (
     NotFoundError,
     ConflictError
 )
+from app.common.deps.auth import CurrentUser
 
-class CourseUserService(BaseService):
+class CourseUserService(BaseService,BaseAccessCheckerCourse):
 
     def __init__(self, repo: CourseUserRepository, course_repo: CourseRepository):
-        super().__init__(repo)
+        BaseService.__init__(self, repo)
+        BaseAccessCheckerCourse.__init__(self, course_repo)
         self.repo = repo
         self.course_repo = course_repo
 
-    async def find_course(self, course_id: UUID, delete_flg:bool | None):
+    async def find_course(self, user:CurrentUser, course_id: UUID, delete_flg:bool | None):
         course_exists = await self.course_repo.get_by_id(course_id, delete_flg=None)
 
         if not course_exists:
             raise NotFoundError("Курс не существует")
         if delete_flg == False and course_exists.delete_flg == True:
             raise NotFoundError("Курс не найден")
-
+        await self.check_course_access(user, course_exists, None)
         return course_exists
 
-    async def create(self, in_data: CourseUserCreate) -> CourseUser:
-        await self.find_course(in_data.course_id, delete_flg=False)
-        return await self.repo.create(in_data.model_dump())
+    async def create_relation(self, user:CurrentUser, in_data: CourseUserCreate) -> CourseUser:
+        await self.find_course(user,in_data.course_id, delete_flg=False)
+        return await self.create(in_data.model_dump())
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
-        await self.find_course(course_id, delete_flg=delete_flg)
+    async def get_by_id_rel(self,user:CurrentUser, id: UUID, delete_flg:bool | None):
+        res = await self.get_by_id(id, delete_flg)
+        if "student" in user.roles and (res.delete_flg == True or res.is_active == False):
+          raise NotFoundError(f"Назначенные курсы не найдены")
+
+        await self.check_course_access(user, None, res.course_id)
+        return res
+
+    async def get_by_course_id(self, user:CurrentUser,course_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+        if "teacher" in user.roles:
+            delete_flg = False
+
+        await self.find_course(user, course_id, delete_flg=delete_flg)
 
         res = await self.repo.get_by_course_id(course_id, delete_flg, skip, limit)
 
@@ -51,6 +65,7 @@ class CourseUserService(BaseService):
         return res
 
     async def get_by_user_id(self, user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+
         res = await self.repo.get_by_user_id(user_id, delete_flg, skip, limit)
 
         if not res:
@@ -58,57 +73,76 @@ class CourseUserService(BaseService):
 
         return res
 
-    async def get_with_courseUser_and_course(self, user_id: UUID,course_id: UUID|None, delete_flg:bool | None) -> List[CourseUser]:
+    async def get_with_courseUser_and_course(self,user:CurrentUser, user_id: UUID,course_id: UUID|None, delete_flg:bool | None) -> List[CourseUser]:
+        if user_id is None:
+            user_id = user.id
+
+        if "student" in user.roles:
+            delete_flg = False
+
         if course_id is not None:
-            await self.find_course(course_id, delete_flg=delete_flg)
+            await self.find_course(user,course_id, delete_flg=delete_flg)
 
         res = await self.repo.get_with_courseUser_and_course(user_id, course_id,delete_flg)
 
+
         if not res:
             raise NotFoundError(f"Назначенные курсы не найдены")
+
+
         result_list = []
         for course_user, course in res:
-          # Преобразуем в словарь с помощью .dict()
-          response = {
-            "id": course_user.id,
-            "user_id": course_user.user_id,
-            "is_active": course_user.is_active,
-            "delete_flg": course_user.delete_flg,
-            "create_at": course_user.create_at,
-            "update_at": course_user.update_at,
-            "course": {
-              "id": course.id,
-              "title": course.title,
-              "description": getattr(course, 'description', None),
-              "level": getattr(course, 'level', None),
-              "author_id": getattr(course, 'author_id', None),
-              "is_published": getattr(course, 'is_published', False),
-              "delete_flg": getattr(course, 'delete_flg', False),
-              "create_at": getattr(course, 'create_at', None),
-              "update_at": getattr(course, 'update_at', None)
-            }
-          }
-          result_list.append(response)
+          if "student" in user.roles and (course_user.is_active == False or course.is_published == False):
+            continue
 
-        # Преобразуем каждый элемент в Pydantic модель
-        return [CourseUserWithCourseResponse(**item) for item in result_list]
+          course_user.course = course
+          result_list.append(
+            CourseUserWithCourseResponse.model_validate(course_user)
+          )
+        if not result_list:
+          raise NotFoundError(f"Назначенные курсы не найдены")
 
-    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg:bool | None) -> Optional[CourseUser]:
-        await self.find_course(course_id, delete_flg=delete_flg)
+        return result_list
+
+    async def get_by_course_and_user_id(self, user:CurrentUser,course_id: UUID, user_id: UUID, delete_flg:bool | None) -> Optional[CourseUser]:
+        if user_id is None:
+          user_id = user.id
+
+        await self.find_course(user, course_id, delete_flg=delete_flg)
 
         res = await self.repo.get_by_course_and_user_id(course_id, user_id, delete_flg)
         if not res:
             raise NotFoundError(f"Назначенные курсы не найдены")
 
+        if "student" in user.roles and (res.delete_flg == True or res.is_active == False):
+          raise NotFoundError(f"Назначенные курсы не найдены")
+
         return res
 
-    async def get_active_by_user_id(self, user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+    async def get_active_by_user_id(self, user:CurrentUser,user_id: UUID, delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
+        if user_id is None:
+            user_id = user.id
+        if "student" in user.roles:
+            delete_flg = False
+
         res = await self.repo.get_active_by_user_id(user_id, delete_flg,skip, limit)
 
         if not res:
           raise NotFoundError(f"Назначенные курсы не найдены")
 
-        return res
+        courses_id = set([rel.course_id for rel in res])
+        allowed_courses = await self.filter_courses_access(user, None, courses_id)
+        allowed_course_ids = [course.id for course in allowed_courses if course.is_published]
+
+        filtered_rel = [
+          rel for rel in res
+          if rel.course_id in allowed_course_ids
+        ]
+
+        if not filtered_rel:
+          raise NotFoundError(f"Назначенные курсы не найдены")
+
+        return filtered_rel
 
     async def get_all_active(self, is_active:bool,delete_flg:bool | None,skip: int, limit: int) -> List[CourseUser]:
         res =  await self.repo.get_active(is_active, delete_flg, skip, limit)

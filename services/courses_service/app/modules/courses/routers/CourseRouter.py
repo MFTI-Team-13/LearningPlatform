@@ -6,27 +6,17 @@ from uuid import UUID
 from app.modules.courses.schemas_import import (
     CourseCreate,
     CourseUpdate,
-    CourseResponse,
-    CourseWithLessonsResponse
+    CourseResponse
 )
 from app.modules.courses.services_import import CourseService, get_course_service
 from app.modules.courses.exceptions import handle_errors
 from app.modules.courses.enums import CourseLevel
-from app.common.deps.auth import require_role,get_current_user,CurrentUser
+from app.common.deps.auth import get_current_user,CurrentUser
+from .requre import require_roles
 
 router = APIRouter(prefix="/course")
 
-def require_roles(*allowed_roles):
-    async def role_checker(user = Depends(get_current_user)):
-        user_roles = set(user.roles)
-        if user_roles.intersection(allowed_roles):
-            return user
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав"
-        )
-    return role_checker
-
+#teacher
 @router.post("/create", response_model=CourseResponse, dependencies=[Depends(require_roles("admin", "teacher"))])
 async def create_course(
     data: CourseCreate,
@@ -55,18 +45,17 @@ async def get_course(
     return await handle_errors(lambda: service.get_by_title(user, title, delete_flg))
 
 
-@router.get("/list", response_model=List[CourseResponse])
+@router.get("/list", response_model=List[CourseResponse], dependencies=[Depends(require_roles("admin"))])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,
     limit: int = 20,
-    user: CurrentUser = Security(get_current_user),
     service: CourseService = Depends(get_course_service),
 ):
 
-    return await handle_errors(lambda: service.get_all_course(user, delete_flg, skip, limit))
+    return await handle_errors(lambda: service.get_all(delete_flg, skip, limit))
 
-
+#teacher
 @router.post("/getByAuthor", response_model=list[CourseResponse], dependencies=[Depends(require_roles("admin", "teacher"))])
 async def get_by_author(
     author_id: UUID | None = None,
@@ -76,7 +65,7 @@ async def get_by_author(
     service: CourseService = Depends(get_course_service),
     user: CurrentUser = Security(get_current_user)
 ):
-    if ("admin" in user.roles and author_id is None) or "teacher" in user.roles:
+    if ("admin" in user.roles and author_id is None) or "student" in user.roles:
         author_id = user.id
 
     return await handle_errors(lambda: service.get_by_author(user, author_id, delete_flg, skip, limit))
@@ -141,12 +130,4 @@ async def hard_delete_course(
 ):
     return await handle_errors(lambda: service.hard_delete(course_id))
 
-@router.get("/listWithLessons", response_model=List[CourseWithLessonsResponse])
-async def list_courses_with_lessons(
-    delete_flg: bool | None = None,
-    skip: int = 0,
-    limit: int = 50,
-    service: CourseService = Depends(get_course_service)
-):
-    return await handle_errors(lambda: service.get_all_with_lessons(delete_flg, skip, limit))
 

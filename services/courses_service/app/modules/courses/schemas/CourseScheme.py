@@ -65,5 +65,3 @@ class CourseResponse(BaseModel):
   create_at: datetime
   update_at: datetime
 
-class CourseWithLessonsResponse(CourseResponse):
-  lessons: List['LessonResponse'] = Field(default_factory=list, description="Уроки")

@@ -49,5 +49,5 @@ class TestResponse(BaseModel):
   is_active: bool
   lesson_id: UUID
   delete_flg:bool
-  created_at: datetime
+  create_at: datetime
   update_at: datetime

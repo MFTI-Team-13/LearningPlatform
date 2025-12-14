@@ -20,7 +20,7 @@ class Test(Base):
     is_active = Column(Boolean, nullable=False, default=True)
 
     delete_flg = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     update_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     lesson = relationship("Lesson", back_populates="test", uselist=False)

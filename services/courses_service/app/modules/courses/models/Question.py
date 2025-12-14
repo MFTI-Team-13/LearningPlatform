@@ -28,7 +28,7 @@ class Question(Base):
   score = Column(Integer, nullable=False, default=1)  # Баллы за вопрос
 
   delete_flg = Column(Boolean, nullable=False, default=False)
-  created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+  create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
   update_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
   test = relationship("Test", back_populates="question")

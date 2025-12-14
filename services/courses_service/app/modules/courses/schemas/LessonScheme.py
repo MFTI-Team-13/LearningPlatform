@@ -108,6 +108,6 @@ class LessonResponse(BaseModel):
   content_url: Optional[str]
   course_id: UUID
   delete_flg: bool
-  created_at: datetime
-  updated_at: datetime
+  create_at: datetime
+  update_at: datetime
 

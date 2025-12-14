@@ -42,7 +42,7 @@ class CourseReviewRepository:
             if hasattr(review, key):
                 setattr(review, key, value)
 
-        review.updated_at = datetime.utcnow()
+        review.update_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(review)
         return review
@@ -54,7 +54,7 @@ class CourseReviewRepository:
           return False
 
         review.delete_flg = True
-        review.updated_at = datetime.utcnow()
+        review.update_at = datetime.utcnow()
         await self.db.commit()
         return True
 
@@ -160,7 +160,7 @@ class CourseReviewRepository:
                     CourseReview.delete_flg == False
                 )
             )
-            .order_by(CourseReview.created_at.desc())
+            .order_by(CourseReview.create_at.desc())
             .offset(skip)
             .limit(limit)
         )
@@ -197,7 +197,7 @@ class CourseReviewRepository:
             )
         )
 
-        if not delete_flg:
+        if not delete_flg and delete_flg is not None:
             query = query.where(
                 and_(
                   CourseReview.is_published == True,
@@ -213,7 +213,7 @@ class CourseReviewRepository:
             )
 
         query = (
-            query.order_by(CourseReview.created_at.desc())
+            query.order_by(CourseReview.create_at.desc())
             .offset(skip)
             .limit(limit)
         )

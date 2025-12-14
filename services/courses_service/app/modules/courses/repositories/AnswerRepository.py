@@ -6,7 +6,7 @@ from fastapi import Depends
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.courses.models_import import Answer
+from app.modules.courses.models_import import *
 from app.common.db.session import get_session
 
 
@@ -110,7 +110,7 @@ class AnswerRepository:
           if hasattr(answer, key):
             setattr(answer, key, value)
 
-      answer.updated_at = datetime.utcnow()
+      answer.update_at = datetime.utcnow()
       await self.db.commit()
       await self.db.refresh(answer)
       return answer
@@ -122,7 +122,7 @@ class AnswerRepository:
           return False
 
       answer.delete_flg = True
-      answer.updated_at = datetime.utcnow()
+      answer.update_at = datetime.utcnow()
       await self.db.commit()
       return True
 
@@ -135,6 +135,77 @@ class AnswerRepository:
       await self.db.delete(answer)
       await self.db.commit()
       return True
+  async def get_assigned_to_create_by_user(self,user_id: UUID,  question_id: UUID,type:str):
+    query = (
+      select(Question)
+      .join(Test, Test.id == Question.test_id)
+      .join(Lesson, Lesson.id == Test.lesson_id)
+      .join(Course, Course.id == Lesson.course_id)
+      .where(
+        and_(
+          Course.delete_flg == False,
+          Course.is_published == True,
+
+          Lesson.delete_flg == False,
+
+          Test.is_active == True,
+          Test.delete_flg == False,
+
+          Question.delete_flg == False,
+          Question.id == question_id
+        )
+      )
+    )
+
+    query = await self.subquery(query, user_id, type)
+    result = await self.db.execute(query)
+    return result.scalar_one_or_none()
+
+  async def subquery(self, query,user_id: UUID, type:str):
+      if type == "teacher":
+          query = query.where(Course.author_id == user_id)
+      else:
+          query = (
+              query
+              .join(CourseUser, CourseUser.course_id == Course.id)
+              .where(
+                  and_(
+                      CourseUser.user_id == user_id,
+                      CourseUser.is_active == True,
+                      CourseUser.delete_flg == False
+                  )
+              )
+          )
+      return query
+
+  async def get_assigned_to_user(self,user_id: UUID,answer_id: UUID,type:str):
+      query = (
+          select(Answer)
+          .join(Question, Question.id == Answer.question_id)
+          .join(Test, Test.id == Question.test_id)
+          .join(Lesson, Lesson.id == Test.lesson_id)
+          .join(Course, Course.id == Lesson.course_id)
+          .where(
+              and_(
+                  Course.delete_flg == False,
+                  Course.is_published == True,
+
+                  Lesson.delete_flg == False,
+
+                  Test.is_active == True,
+                  Test.delete_flg == False,
+
+                  Question.delete_flg == False,
+
+                  Answer.id == answer_id,
+                  Answer.delete_flg == False,
+              )
+          )
+      )
+
+      query = await self.subquery(query, user_id, type)
+      result = await self.db.execute(query)
+      return result.scalar_one_or_none()
 
   async def count_by_question(self, question_id: UUID, delete_flg: bool | None) -> int:
       query = select(func.count(Answer.id)).where(Answer.question_id == question_id)

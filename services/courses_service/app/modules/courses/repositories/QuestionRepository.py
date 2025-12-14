@@ -9,11 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.courses.models_import import Question,Test
 from app.modules.courses.enums import QuestionType
 from app.common.db.session import get_session
+from .CascadeDeleteRepository import CascadeDeleteRepository
 
 
 class QuestionRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.cascade_delete = CascadeDeleteRepository(db)
 
     async def create(self, question_data: dict) -> Question:
         question = Question(**question_data)
@@ -143,7 +145,7 @@ class QuestionRepository:
             if hasattr(question, key):
                 setattr(question, key, value)
 
-        question.updated_at = datetime.utcnow()
+        question.update_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(question)
         return question
@@ -154,10 +156,13 @@ class QuestionRepository:
         if not question:
             return False
 
-        question.delete_flg = True
-        question.updated_at = datetime.utcnow()
-        await self.db.commit()
-        return True
+        try:
+          await self.cascade_delete.delete_question(question_id)
+          await self.db.commit()  # ⬅ один commit
+          return True
+        except Exception as e:
+          await self.db.rollback()
+          raise
 
     async def hard_delete(self, question_id: UUID) -> bool:
         question = await self.get_by_id(question_id, None)

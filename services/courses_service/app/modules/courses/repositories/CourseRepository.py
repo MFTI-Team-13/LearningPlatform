@@ -3,18 +3,20 @@ from datetime import datetime
 
 from fastapi import Depends
 from uuid import UUID
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, update,and_, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.courses.models_import import Course
+from app.modules.courses.models_import import Course, CourseUser,Lesson,CourseReview
 from app.modules.courses.enums import CourseLevel
 from app.common.db.session import get_session
+from .CascadeDeleteRepository import CascadeDeleteRepository
 
 
 class CourseRepository:
   def __init__(self, db: AsyncSession):
     self.db = db
+    self.cascade_delete = CascadeDeleteRepository(db)
 
   async def create(self, course_data: dict) -> Course:
       course = Course(**course_data)
@@ -76,7 +78,7 @@ class CourseRepository:
       result = await self.db.execute(query)
       return result.scalar_one_or_none()
 
-  async def get_assigned_to_user(self, user_id: UUID, course_id:UUID):
+  async def get_assigned_to_user(self, user_id: UUID, course_id:UUID, type:str = None):
       query = (
           select(Course)
           .join(CourseUser, CourseUser.course_id == Course.id)
@@ -128,7 +130,7 @@ class CourseRepository:
           if hasattr(course, key):
             setattr(course, key, value)
 
-      course.updated_at = datetime.utcnow()
+      course.update_at = datetime.utcnow()
       await self.db.commit()
       await self.db.refresh(course)
       return course
@@ -139,9 +141,13 @@ class CourseRepository:
       if not course:
           return False
 
-      course.delete_flg = True
-      await self.db.commit()
-      return True
+      try:
+        await self.cascade_delete.delete_course(course_id)
+        await self.db.commit()  # ⬅ один commit
+        return True
+      except Exception as e:
+        await self.db.rollback()
+        raise
 
   async def hard_delete(self, course_id: UUID) -> bool:
       course = await self.get_by_id(course_id, None)
@@ -188,38 +194,6 @@ class CourseRepository:
           .limit(limit)
       )
       return result.scalars().all()
-
-
-  async def get_with_lessons(self, course_id: UUID) -> Optional[Course]:
-      result = await self.db.execute(
-          select(Course).where(
-              and_(
-                Course.id == course_id,
-                Course.delete_flg == False
-              )
-          )
-      )
-      return result.scalar_one_or_none()
-
-  async def get_all_with_lessons(self,delete_flg: bool | None,skip: int,limit: int) -> List[Course]:
-    query = select(Course).options(selectinload(Course.lesson))
-
-    if delete_flg is not None:
-        query = query.where(Course.delete_flg == delete_flg)
-
-    query = query.offset(skip).limit(limit)
-
-    result = await self.db.execute(query)
-    courses = result.scalars().unique().all()
-
-    for course in courses:
-      if delete_flg is not None:
-        course.lessons = [
-          lesson for lesson in course.lessons
-          if lesson.delete_flg == delete_flg
-        ]
-
-    return courses
 
 
 async def get_course_repository(

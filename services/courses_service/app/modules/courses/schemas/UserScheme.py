@@ -74,8 +74,8 @@ class UserResponse(BaseModel):
     login: Optional[str] = None
     role: UserRole
     deleted_flg: bool = False
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    create_at: datetime
+    update_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

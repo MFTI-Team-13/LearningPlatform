@@ -7,7 +7,7 @@ from .schemas.CourseReviewScheme import *
 from .schemas.CourseUserScheme import *
 
 course_schemas = [
-    CourseBase, CourseCreate, CourseUpdate, CourseResponse,CourseWithLessonsResponse
+    CourseBase, CourseCreate, CourseUpdate, CourseResponse
 ]
 
 lesson_schemas = [

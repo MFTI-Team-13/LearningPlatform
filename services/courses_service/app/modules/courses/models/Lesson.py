@@ -26,8 +26,8 @@ class Lesson(Base):
     order_index = Column(Integer, nullable=False, default=0)
     delete_flg = Column(Boolean, nullable=False, default=False)
 
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
+    create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    update_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     course = relationship("Course", back_populates="lesson")
     test = relationship("Test", back_populates="lesson", cascade="all, delete-orphan")

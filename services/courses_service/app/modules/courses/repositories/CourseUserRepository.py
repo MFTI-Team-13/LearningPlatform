@@ -129,7 +129,7 @@ class CourseUserRepository:
             if hasattr(course_student, key):
               setattr(course_student, key, value)
 
-        course_student.updated_at = datetime.utcnow()
+        course_student.update_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(course_student)
         return course_student
@@ -142,7 +142,7 @@ class CourseUserRepository:
 
         course_student.delete_flg = True
         course_student.is_active = False
-        course_student.updated_at = datetime.utcnow()
+        course_student.update_at = datetime.utcnow()
 
         await self.db.commit()
         return True

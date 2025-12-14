@@ -1,10 +1,11 @@
 .git
-**/__pycache__
-**/*.pyc
-**/.mypy_cache
-**/.pytest_cache
+/__pycache__
+/*.pyc
+/.mypy_cache
+/.pytest_cache
 node_modules
 .env
 infra/secrets/*
 !infra/secrets/*.example.env
 .idea
+.idea_1

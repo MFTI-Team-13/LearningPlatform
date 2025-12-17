@@ -4,7 +4,6 @@ from fastapi import FastAPI
 
 from app.api.main_router import main_router
 
-
 def try_pycharm_attach() -> None:
   if os.getenv("PYCHARM_ATTACH", "0").lower() in ("1", "true", "yes"):
     try:

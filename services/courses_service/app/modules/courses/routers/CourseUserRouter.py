@@ -1,25 +1,35 @@
+from typing import List
+
+from fastapi import APIRouter, Depends, Security
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
-
-from app.modules.courses.exceptions import handle_errors
 from app.modules.courses.schemas_import import (
     CourseUserCreate,
+    CourseUserUpdate,
     CourseUserResponse,
+    CourseUserWithCourseResponse,
+CourseUserListResponse
 )
-from app.modules.courses.services_import import CourseUserService, get_course_user_service
+from app.modules.courses.services_import import (
+    CourseUserService,
+    get_course_user_service
+)
+from app.modules.courses.exceptions import handle_errors
+from app.common.deps.auth import get_current_user,CurrentUser
+from .requre import require_roles
 
 router = APIRouter(prefix="/courseUser")
 
 
-@router.post("/create", response_model=CourseUserResponse)
+@router.post("/create", response_model=CourseUserResponse, dependencies=[Depends(require_roles("admin"))])
 async def create_course_user(
     data: CourseUserCreate,
-    service: CourseUserService = Depends(get_course_user_service)
+    service: CourseUserService = Depends(get_course_user_service),
+    user: CurrentUser = Security(get_current_user)
 ):
-    return await handle_errors(lambda: service.create(data))
+    return await handle_errors(lambda: service.create_relation(user,data))
 
-@router.get("/list", response_model=list[CourseUserResponse])
+@router.get("/list", response_model=List[CourseUserResponse], dependencies=[Depends(require_roles("admin"))])
 async def list_courses(
     delete_flg: bool | None = None,
     skip: int = 0,
@@ -34,22 +44,24 @@ async def get_course_user_by_id(
     id: UUID,
     delete_flg: bool | None = None,
     service: CourseUserService = Depends(get_course_user_service),
+    user: CurrentUser = Security(get_current_user)
 ):
-    return await handle_errors(lambda: service.get_by_id(id, delete_flg))
+    return await handle_errors(lambda: service.get_by_id_rel(user, id, delete_flg))
 
 
-@router.post("/getByCourse", response_model=list[CourseUserResponse])
+@router.post("/getByCourse", response_model=List[CourseUserResponse], dependencies=[Depends(require_roles("admin", "teacher"))])
 async def get_by_course(
     course_id: UUID,
     delete_flg: bool | None = None,
     skip: int = 0,
     limit: int = 50,
     service: CourseUserService = Depends(get_course_user_service),
+    user: CurrentUser = Security(get_current_user)
 ):
-    return await handle_errors(lambda: service.get_by_course_id(course_id, delete_flg, skip, limit))
+    return await handle_errors(lambda: service.get_by_course_id(user, course_id, delete_flg, skip, limit))
 
 
-@router.post("/getByUser", response_model=list[CourseUserResponse])
+@router.post("/getByUser", response_model=List[CourseUserResponse], dependencies=[Depends(require_roles("admin"))])
 async def get_by_user(
     user_id: UUID,
     delete_flg: bool | None = None,
@@ -60,28 +72,35 @@ async def get_by_user(
     return await handle_errors(lambda: service.get_by_user_id(user_id, delete_flg, skip, limit))
 
 
-@router.post("/getByCourseAndUser", response_model=CourseUserResponse)
+@router.post("/getByCourseAndUser", response_model=CourseUserResponse, dependencies=[Depends(require_roles("admin","student"))])
 async def get_by_course_and_user(
     course_id: UUID,
-    user_id: UUID,
+    user_id: UUID | None = None,
     delete_flg: bool | None = None,
     service: CourseUserService = Depends(get_course_user_service),
+    user: CurrentUser = Security(get_current_user)
+
 ):
-    return await handle_errors(lambda: service.get_by_course_and_user_id(course_id, user_id, delete_flg))
+    if ("admin" in user.roles and user_id is None) or "student" in user.roles:
+        user_id = user.id
+    return await handle_errors(lambda: service.get_by_course_and_user_id(user, course_id, user_id, delete_flg))
 
 
-@router.post("/getActiveByUser", response_model=list[CourseUserResponse])
+@router.post("/getActiveByUser", response_model=List[CourseUserResponse], dependencies=[Depends(require_roles("admin","student"))])
 async def get_active_by_user(
-    user_id: UUID,
+    user_id: UUID| None = None,
     delete_flg: bool | None = None,
     skip: int = 0,
     limit: int = 50,
     service: CourseUserService = Depends(get_course_user_service),
+    user: CurrentUser = Security(get_current_user)
 ):
-    return await handle_errors(lambda: service.get_active_by_user_id(user_id, delete_flg, skip, limit))
+    if ("admin" in user.roles and user_id is None) or "student" in user.roles:
+        user_id = user.id
+    return await handle_errors(lambda: service.get_active_by_user_id(user, user_id, delete_flg, skip, limit))
 
 
-@router.put("/activate")
+@router.put("/activate", response_model=CourseUserResponse,dependencies=[Depends(require_roles("admin"))])
 async def activate_course_user(
     id: UUID,
     service: CourseUserService = Depends(get_course_user_service)
@@ -89,7 +108,7 @@ async def activate_course_user(
     return await handle_errors(lambda: service.activate(id))
 
 
-@router.put("/deactivate")
+@router.put("/deactivate", response_model=CourseUserResponse,dependencies=[Depends(require_roles("admin"))])
 async def deactivate_course_user(
     id: UUID,
     service: CourseUserService = Depends(get_course_user_service)
@@ -97,7 +116,7 @@ async def deactivate_course_user(
     return await handle_errors(lambda: service.deactivate(id))
 
 
-@router.delete("/softDelete")
+@router.delete("/softDelete", dependencies=[Depends(require_roles("admin"))])
 async def soft_delete_course_user(
     id: UUID,
     service: CourseUserService = Depends(get_course_user_service),
@@ -105,30 +124,26 @@ async def soft_delete_course_user(
     return await handle_errors(lambda: service.soft_delete(id))
 
 
-@router.delete("/hardDelete")
+@router.delete("/hardDelete", dependencies=[Depends(require_roles("admin"))])
 async def hard_delete_course_user(
     id: UUID,
     service: CourseUserService = Depends(get_course_user_service),
 ):
     return await handle_errors(lambda: service.hard_delete(id))
 
-@router.post("/getWithCourse")
+@router.post("/getWithCourse",dependencies=[Depends(require_roles("admin","student"))])
 async def get_with_course_and_course_user(
-    user_id:UUID,
+    user_id:UUID|None = None,
     course_id:UUID|None = None,
     delete_flg:bool|None = None,
-    service: CourseUserService = Depends(get_course_user_service)
+    service: CourseUserService = Depends(get_course_user_service),
+    user: CurrentUser = Security(get_current_user)
 ):
     try:
       return await handle_errors(
-        lambda: service.get_with_courseUser_and_course(
-            user_id=user_id,
-            course_id=course_id,
-            delete_flg=delete_flg
-        )
+        lambda: service.get_with_courseUser_and_course(user,user_id,course_id,delete_flg)
       )
     except Exception as e:
-        # Для дебага: выводим ошибку
         print(f"Error in router: {e}")
         print(f"Result type: {type(result) if 'result' in locals() else 'N/A'}")
         raise

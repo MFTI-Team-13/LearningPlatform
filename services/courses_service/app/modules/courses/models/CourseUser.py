@@ -1,12 +1,11 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, UniqueConstraint
+import uuid
+from sqlalchemy import Column,DateTime,Boolean,ForeignKey,UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from .Base import Base
-
 
 class CourseUser(Base):
     __tablename__ = "course_students"

@@ -1,7 +1,8 @@
+from typing import Optional,List
 from datetime import datetime
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 from app.modules.courses.enums import QuestionType
 
@@ -45,10 +46,10 @@ class QuestionCreate(QuestionBase):
 class QuestionUpdate(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
-  text: str | None = Field(None, min_length=10, max_length=2000)
-  question_type: QuestionType | None = None
-  order_index: int | None = Field(None, ge=0, le=100)
-  score: int | None = Field(None, ge=1, le=100)
+  text: Optional[str] = Field(None, min_length=10, max_length=2000)
+  question_type: Optional[QuestionType] = None
+  order_index: Optional[int] = Field(None, ge=0, le=100)
+  score: Optional[int] = Field(None, ge=1, le=100)
 
   @model_validator(mode='after')
   def validate_not_all_null(self):
@@ -72,7 +73,7 @@ class QuestionResponse(BaseModel):
   score: int
   test_id: UUID
   delete_flg:bool
-  created_at: datetime
+  create_at: datetime
   update_at: datetime
 
 
@@ -81,4 +82,4 @@ class QuestionWithTest(QuestionResponse):
 
 
 class QuestionWithAnswers(QuestionResponse):
-  answers: list['AnswerResponse'] = Field(default_factory=list, description="Варианты ответов")
+  answers: List['AnswerResponse'] = Field(default_factory=list, description="Варианты ответов")

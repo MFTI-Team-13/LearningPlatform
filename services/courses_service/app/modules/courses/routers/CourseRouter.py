@@ -1,114 +1,96 @@
-from typing import Annotated
+from typing import List
+
+from fastapi import APIRouter, Depends,Security
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
-from starlette import status
-
-from app.common.deps.auth import CurrentUser, get_current_user
-from app.modules.courses.enums import CourseLevel
-from app.modules.courses.exceptions import handle_errors
 from app.modules.courses.schemas_import import (
-  CourseCreate,
-  CourseResponse,
-  CourseUpdate,  # сделаем его PATCH-совместимым
+    CourseCreate,
+    CourseUpdate,
+    CourseResponse
 )
 from app.modules.courses.services_import import CourseService, get_course_service
+from app.modules.courses.exceptions import handle_errors
+from app.modules.courses.enums import CourseLevel
+from app.common.deps.auth import get_current_user,CurrentUser
+from .requre import require_roles
 
-router = APIRouter()
+router = APIRouter(prefix="/course")
 
-CurrentUserDep = Annotated[CurrentUser, Security(get_current_user)]
-CourseServiceDep = Annotated[CourseService, Depends(get_course_service)]
-
-
-def require_roles(*allowed_roles: str):
-  async def role_checker(user: CurrentUserDep):
-    if set(user.roles).intersection(allowed_roles):
-      return user
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав")
-
-  return role_checker
-
-
-@router.post(
-  "",
-  response_model=CourseResponse,
-  dependencies=[Depends(require_roles("admin", "teacher"))],
-)
+#teacher
+@router.post("/create", response_model=CourseResponse, dependencies=[Depends(require_roles("admin", "teacher"))])
 async def create_course(
-  data: CourseCreate,
-  user: CurrentUserDep,
-  service: CourseServiceDep,
+    data: CourseCreate,
+    user: CurrentUser = Security(get_current_user),
+    service: CourseService = Depends(get_course_service)
 ):
-  return await handle_errors(lambda: service.create_course(user.id, data))
+    return await handle_errors(lambda: service.create_course(user.id, data))
 
 
-@router.get("", response_model=list[CourseResponse])
-async def list_courses(
-  user: CurrentUserDep,
-  service: CourseServiceDep,
-  q: str | None = None,
-  title: str | None = None,
-  author_id: UUID | None = None,
-  level: CourseLevel | None = None,
-  published: bool | None = None,
-  include_deleted: bool = False,
-  include_lessons: bool = False,
-  skip: int = 0,
-  limit: int = 20,
-):
-  return await handle_errors(
-    lambda: service.list_courses(
-      user=user,
-      q=q,
-      title=title,
-      author_id=author_id,
-      level=level,
-      published=published,
-      include_deleted=include_deleted,
-      include_lessons=include_lessons,
-      skip=skip,
-      limit=limit,
-    )
-  )
-
-
-@router.get("/{course_id}", response_model=CourseResponse)
+@router.post("/getById", response_model=CourseResponse,dependencies=[Depends(require_roles("admin", "teacher","student"))])
 async def get_course(
-  course_id: UUID,
-  user: CurrentUser = Security(get_current_user),
-  service: CourseService = Depends(get_course_service),
-  include_deleted: bool = False,
+    course_id: UUID,
+    delete_flg: bool | None = None,
+    user: CurrentUser = Security(get_current_user),
+    service: CourseService = Depends(get_course_service)
 ):
-  return await handle_errors(
-    lambda: service.get_course(user, course_id, include_deleted=include_deleted)
-  )
+    return await handle_errors(lambda: service.get_by_id_course(user, course_id, delete_flg))
 
-
-@router.patch(
-  "/{course_id}",
-  response_model=CourseResponse,
-  dependencies=[Depends(require_roles("admin", "teacher"))],
-)
-async def patch_course(
-  course_id: UUID,
-  data: CourseUpdate,
-  user: CurrentUserDep,
-  service: CourseServiceDep,
+@router.get("/getByTitle", response_model=CourseResponse,dependencies=[Depends(require_roles("admin", "teacher","student"))])
+async def get_course(
+    title: str,
+    delete_flg: bool | None = None,
+    user: CurrentUser = Security(get_current_user),
+    service: CourseService = Depends(get_course_service)
 ):
-  return await handle_errors(lambda: service.update_course(user, course_id, data))
+    return await handle_errors(lambda: service.get_by_title(user, title, delete_flg))
 
 
-@router.delete(
-  "/{course_id}",
-  response_model=bool,
-)
-async def delete_course(
-  user: CurrentUserDep,
-  service: CourseServiceDep,
-  course_id: UUID,
-  hard: bool = False,
+@router.get("/list", response_model=List[CourseResponse], dependencies=[Depends(require_roles("admin"))])
+async def list_courses(
+    delete_flg: bool | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    service: CourseService = Depends(get_course_service),
 ):
-  if hard and "admin" not in set(user.roles):
-    raise HTTPException(status_code=403, detail="Недостаточно прав для hard delete")
 
-  return await handle_errors(lambda: service.delete_course(user, course_id, hard=hard))
+    return await handle_errors(lambda: service.get_all(delete_flg, skip, limit))
+
+@router.post("/getByUser", response_model=list[CourseResponse], dependencies=[Depends(require_roles("admin", "teacher","student"))])
+async def get_by_author(
+    author_id: UUID | None = None,
+    user_id: UUID | None = None,
+    is_published: bool | None = None,
+    level: CourseLevel | None = None,
+    delete_flg: bool | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    service: CourseService = Depends(get_course_service),
+    user: CurrentUser = Security(get_current_user)
+):
+    return await handle_errors(lambda: service.get_by_user(user, author_id,user_id,is_published,level, delete_flg, skip, limit))
+
+@router.put("/update", response_model=CourseResponse, dependencies=[Depends(require_roles("admin", "teacher"))])
+async def update_course(
+    course_id: UUID,
+    data: CourseUpdate,
+    user: CurrentUser = Security(get_current_user),
+    service: CourseService = Depends(get_course_service)
+):
+    return await handle_errors(lambda: service.update_course(user, course_id, data))
+
+@router.delete("/softDelete", response_model=bool, dependencies=[Depends(require_roles("admin", "teacher"))])
+async def soft_delete_course(
+    course_id: UUID,
+    user: CurrentUser = Security(get_current_user),
+    service: CourseService = Depends(get_course_service)
+):
+    return await handle_errors(lambda: service.soft_delete_course(user, course_id))
+
+@router.delete("/hardDelete",response_model=bool, dependencies=[Depends(require_roles("admin"))])
+async def hard_delete_course(
+    course_id: UUID,
+    service: CourseService = Depends(get_course_service)
+):
+    return await handle_errors(lambda: service.hard_delete(course_id))
+
+

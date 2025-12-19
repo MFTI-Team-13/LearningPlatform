@@ -1,8 +1,7 @@
-import logging
-
-import asyncpg
 from fastapi import HTTPException, status
+import logging
 from sqlalchemy.exc import IntegrityError
+import asyncpg
 
 logger = logging.getLogger(__name__)
 

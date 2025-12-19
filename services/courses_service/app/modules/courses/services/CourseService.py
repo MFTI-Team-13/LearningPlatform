@@ -1,133 +1,116 @@
-from __future__ import annotations
-
-from uuid import UUID
+from typing import List,Optional
 
 from fastapi import Depends
+from uuid import UUID
 
-from app.common.deps.auth import CurrentUser
-from app.modules.courses.enums import CourseLevel
-from app.modules.courses.exceptions import (
-  AlreadyExistsError,
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-)
+from .BaseService import BaseService
+from .BaseAccessCheckerCourse import BaseAccessCheckerCourse
 from app.modules.courses.models_import import Course
-from app.modules.courses.repositories.CourseRepository import (
-  CourseRepository,
-  get_course_repository,
+from app.modules.courses.enums import CourseLevel
+from app.modules.courses.repositories_import import CourseRepository, get_course_repository
+from app.modules.courses.schemas.CourseScheme import (
+    CourseCreate,
+    CourseUpdate
 )
-from app.modules.courses.schemas.CourseScheme import CourseCreate, CourseUpdate
+from app.modules.courses.exceptions import (
+    NotFoundError,
+    AlreadyExistsError,
+    ConflictError
+)
+from app.common.deps.auth import CurrentUser
 
 
-class CourseService:
-  def __init__(self, repo: CourseRepository):
-    self.repo = repo
 
-  async def create_course(self, author_id: UUID, in_data: CourseCreate) -> Course:
-    if await self.repo.exists_title(in_data.title):
-      raise AlreadyExistsError("Курс с таким названием уже существует")
-    return await self.repo.create(author_id=author_id, data=in_data)
+class CourseService(BaseService, BaseAccessCheckerCourse):
+    def __init__(self, repo: CourseRepository):
+        BaseService.__init__(self, repo)
+        BaseAccessCheckerCourse.__init__(self, repo)
+        self.repo: CourseRepository = repo
 
-  async def get_course(
-    self, user: CurrentUser, course_id: UUID, include_deleted: bool = False
-  ) -> Course:
-    course = await self.repo.get_for_user(
-      user=user,
-      course_id=course_id,
-      include_deleted=include_deleted,
-      include_lessons=False,
-    )
-    if course is None:
-      raise NotFoundError("Курс не найден или нет доступа")
-    return course
 
-  async def list_courses(
-    self,
-    user: CurrentUser,
-    q: str | None,
-    title: str | None,
-    author_id: UUID | None,
-    level: CourseLevel | None,
-    published: bool | None,
-    include_deleted: bool,
-    include_lessons: bool,
-    skip: int,
-    limit: int,
-  ) -> list[Course]:
-    return await self.repo.list_for_user(
-      user=user,
-      q=q,
-      title=title,
-      author_id=author_id,
-      level=level,
-      published=published,
-      include_deleted=include_deleted,
-      include_lessons=include_lessons,
-      skip=skip,
-      limit=limit,
-    )
+    async def create_course(self, author_id:UUID, in_data: CourseCreate) -> Course:
+        if await self.find_by_title(in_data.title, None):
+            raise AlreadyExistsError("Курс с таким названием уже существует")
 
-  async def update_course(self, user: CurrentUser, course_id: UUID, patch: CourseUpdate) -> Course:
-    roles = set(user.roles)
+        dict_model = in_data.model_dump()
+        dict_model['author_id'] = author_id
+        return await self.create(dict_model)
 
-    course = await self.repo.get_for_user(
-      user=user,
-      course_id=course_id,
-      include_deleted=True,
-      include_lessons=False,
-    )
-    if course is None:
-      raise NotFoundError("Курс не найден или нет доступа")
+    async def get_by_id_course(self,user:CurrentUser, id: UUID, delete_flg:bool | None):
+        if "teacher" in user.roles or "student" in user.roles:
+            delete_flg = False
 
-    if "teacher" in roles and course.author_id != user.id:
-      raise ForbiddenError()
+        res = await self.get_by_id(id, delete_flg)
 
-    if "admin" not in roles and "teacher" not in roles:
-      raise ForbiddenError()
+        course = await self.check_course_access(user, res, None)
 
-    if patch.title is not None and patch.title != course.title:
-      if await self.repo.exists_title(patch.title):
-        raise AlreadyExistsError("Курс с таким названием уже существует")
+        return course
 
-    if patch.is_published is True and course.delete_flg:
-      raise ConflictError("Нельзя опубликовать удалённый курс")
+    async def find_by_title(self, title: str, delete_flg: bool | None) -> Optional[Course]:
+        return await self.repo.get_by_title(title, delete_flg)
 
-    updated = await self.repo.patch(course_id=course_id, patch=patch)
-    if updated is None:
-      raise NotFoundError("Курс не найден")
-    return updated
+    async def get_by_title(self, user:CurrentUser, title: str, delete_flg: bool | None) -> Course:
+        res = await self.find_by_title(title, delete_flg)
 
-  async def delete_course(self, user: CurrentUser, course_id: UUID, hard: bool) -> bool:
-    roles = set(user.roles)
+        if res is None:
+            raise NotFoundError("Курс с таким названием не найден")
 
-    course = await self.repo.get_for_user(
-      user=user,
-      course_id=course_id,
-      include_deleted=True,
-      include_lessons=False,
-    )
-    if course is None:
-      raise NotFoundError("Курс не найден или нет доступа")
+        course = await self.check_course_access(user, res, None)
+        return course
 
-    if hard:
-      if "admin" not in roles:
-        raise ForbiddenError()
-      return await self.repo.hard_delete(course_id)
+    async def get_by_user(self, user:CurrentUser, author_id: UUID | None,user_id: UUID | None,is_published:bool | None,level: CourseLevel | None, delete_flg:bool | None, skip: int, limit: int) -> List[Course]:
+        if "admin" in user.roles and author_id is None and user_id is None:
+            author_id = user.id
 
-    if "teacher" in roles and course.author_id != user.id:
-      raise ForbiddenError()
+        if "teacher" in user.roles:
+            author_id = user.id
+            user_id = None
+            delete_flg = False
 
-    if "admin" not in roles and "teacher" not in roles:
-      raise ForbiddenError()
+        if "student" in user.roles:
+            author_id = None
+            user_id = user.id
+            delete_flg = False
+            is_published = True
 
-    if course.is_published:
-      await self.repo.patch(course_id=course_id, patch=CourseUpdate(is_published=False))
+        res = await self.repo.get_by_user(author_id,user_id,is_published,level, delete_flg, skip, limit)
 
-    return await self.repo.soft_delete(course_id)
+        if not res:
+            raise NotFoundError(f"Курсы не найдены")
+
+        return res
+
+
+    async def update_course(self, user:CurrentUser, id: UUID, in_data: CourseUpdate) -> Course:
+        course = await self.get_by_id(id, None)
+
+        if course.delete_flg:
+          raise ConflictError(f"Нельзя изменить удаленный курс")
+
+        course = await self.check_course_access(user, course, None)
+
+        if in_data.title and in_data.title != course.title:
+            if await self.find_by_title(in_data.title, None):
+                raise AlreadyExistsError("Курс с таким названием уже существует")
+
+        return await self.update(id, in_data)
+
+    async def soft_delete_course(self,user:CurrentUser,id: UUID):
+      course = await self.get_by_id(id, None)
+
+      if course.delete_flg:
+        raise ConflictError(f"Курс уже удален")
+
+      course = await self.check_course_access(user,course, None)
+
+      if course.is_published:
+        await self.repo.unpublish(id)
+
+      return await self.soft_delete(id)
+
 
 
 async def get_course_service(
-  repo: CourseRepository = Depends(get_course_repository),
+    repo: CourseRepository = Depends(get_course_repository)
 ) -> CourseService:
-  return CourseService(repo)
+    return CourseService(repo)

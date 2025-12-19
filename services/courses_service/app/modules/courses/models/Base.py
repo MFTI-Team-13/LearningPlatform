@@ -1,1 +1,2 @@
-from app.common.db.base import Base  # noqa: F401
+from app.common.db.base import Base
+

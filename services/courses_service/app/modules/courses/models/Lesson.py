@@ -1,23 +1,12 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+import uuid
+from sqlalchemy import Column, String, Text, Integer,Boolean, DateTime, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.modules.courses.enums import ContentType
-
 from .Base import Base
+from app.modules.courses.enums import ContentType
 
 
 class Lesson(Base):
@@ -37,8 +26,8 @@ class Lesson(Base):
     order_index = Column(Integer, nullable=False, default=0)
     delete_flg = Column(Boolean, nullable=False, default=False)
 
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
+    create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    update_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     course = relationship("Course", back_populates="lesson")
     test = relationship("Test", back_populates="lesson", cascade="all, delete-orphan")

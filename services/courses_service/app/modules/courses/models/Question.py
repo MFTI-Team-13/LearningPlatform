@@ -1,13 +1,12 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, Text, UniqueConstraint
+import uuid
+from sqlalchemy import Column, Text, Integer,Boolean, DateTime, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.modules.courses.enums import QuestionType
-
 from .Base import Base
+from app.modules.courses.enums import QuestionType
 
 
 class Question(Base):
@@ -29,7 +28,7 @@ class Question(Base):
   score = Column(Integer, nullable=False, default=1)  # Баллы за вопрос
 
   delete_flg = Column(Boolean, nullable=False, default=False)
-  created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+  create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
   update_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
   test = relationship("Test", back_populates="question")

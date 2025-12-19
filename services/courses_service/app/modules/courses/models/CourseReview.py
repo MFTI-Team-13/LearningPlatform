@@ -1,16 +1,7 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    CheckConstraint,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    Text,
-    UniqueConstraint,
-)
+import uuid
+from sqlalchemy import Column, String, Text, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -29,8 +20,8 @@ class CourseReview(Base):
     comment = Column(Text)
     is_published = Column(Boolean, nullable=False, default=True)
     delete_flg = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
+    create_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    update_at = Column(DateTime,nullable=False,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     course = relationship("Course", back_populates="reviews")
 

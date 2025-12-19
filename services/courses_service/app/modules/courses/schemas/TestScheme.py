@@ -1,14 +1,15 @@
+from typing import Optional
 from datetime import datetime
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class TestBase(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
   title: str = Field(..., min_length=3, max_length=255, description="Название теста")
-  description: str | None = Field(None, description="Описание теста")
+  description: Optional[str] = Field(None, description="Описание теста")
   is_active: bool = Field(default=True, description="Активен ли тест")
 
   @field_validator('title')
@@ -26,8 +27,8 @@ class TestCreate(TestBase):
 class TestUpdate(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
-  title: str | None = Field(None, min_length=3, max_length=255)
-  description: str | None = None
+  title: Optional[str] = Field(None, min_length=3, max_length=255)
+  description: Optional[str] = None
 
   @model_validator(mode='after')
   def validate_not_all_null(self):
@@ -44,9 +45,9 @@ class TestResponse(BaseModel):
 
   id: UUID
   title: str
-  description: str | None
+  description: Optional[str]
   is_active: bool
   lesson_id: UUID
   delete_flg:bool
-  created_at: datetime
+  create_at: datetime
   update_at: datetime

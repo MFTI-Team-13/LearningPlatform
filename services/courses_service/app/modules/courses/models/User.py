@@ -1,11 +1,10 @@
-import uuid
-
-from Base import Base
-from sqlalchemy import Column, DateTime, Enum, String
+from sqlalchemy import Column, String, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import uuid
 
+from Base import Base
 from services.courses_service.app.modules.courses.enums import UserRole
 
 

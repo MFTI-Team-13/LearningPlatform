@@ -1,12 +1,13 @@
+from typing import Optional, List, Tuple
 from datetime import datetime
-from uuid import UUID
 
+from uuid import UUID
 from fastapi import Depends
-from sqlalchemy import and_, func, select
+from sqlalchemy import select, and_, or_, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.db.session import get_session
 from app.modules.courses.models_import import CourseReview
+from app.common.db.session import get_session
 
 
 class CourseReviewRepository:
@@ -20,7 +21,7 @@ class CourseReviewRepository:
         await self.db.refresh(review)
         return review
 
-    async def get_all(self, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[CourseReview]:
+    async def get_all(self, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[CourseReview]:
         query = select(CourseReview)
 
         if delete_flg is not None:
@@ -31,7 +32,7 @@ class CourseReviewRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def update(self, review_id: UUID, review_data: dict) -> CourseReview | None:
+    async def update(self, review_id: UUID, review_data: dict) -> Optional[CourseReview]:
         review = await self.get_by_id(review_id, False)
 
         if not review:
@@ -41,7 +42,7 @@ class CourseReviewRepository:
             if hasattr(review, key):
                 setattr(review, key, value)
 
-        review.updated_at = datetime.utcnow()
+        review.update_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(review)
         return review
@@ -53,7 +54,7 @@ class CourseReviewRepository:
           return False
 
         review.delete_flg = True
-        review.updated_at = datetime.utcnow()
+        review.update_at = datetime.utcnow()
         await self.db.commit()
         return True
 
@@ -67,7 +68,7 @@ class CourseReviewRepository:
         await self.db.commit()
         return True
 
-    async def get_by_id(self, id: UUID, delete_flg: bool | None) -> CourseReview | None:
+    async def get_by_id(self, id: UUID, delete_flg: bool | None) -> Optional[CourseReview]:
         query = select(CourseReview).where(CourseReview.id == id)
 
         if delete_flg is not None:
@@ -77,7 +78,7 @@ class CourseReviewRepository:
 
         return result.scalar_one_or_none()
 
-    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[CourseReview]:
+    async def get_by_course_id(self, course_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[CourseReview]:
         query = select(CourseReview).where(CourseReview.course_id == course_id)
 
         if delete_flg is not None:
@@ -91,7 +92,7 @@ class CourseReviewRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_by_user_id(self, user_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[CourseReview]:
+    async def get_by_user_id(self, user_id: UUID, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[CourseReview]:
         query = select(CourseReview).where(CourseReview.user_id == user_id)
 
         if delete_flg is not None:
@@ -105,7 +106,7 @@ class CourseReviewRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg: bool | None) -> CourseReview | None:
+    async def get_by_course_and_user_id(self, course_id: UUID, user_id: UUID, delete_flg: bool | None) -> Optional[CourseReview]:
         query = select(CourseReview).where(
                 and_(
                     CourseReview.course_id == course_id,
@@ -148,7 +149,7 @@ class CourseReviewRepository:
         result = await self.db.execute(query)
         return result.scalar()
 
-    async def get_by_rating(self, course_id: UUID, rating: int, skip: int = 0, limit: int = 100) -> list[CourseReview]:
+    async def get_by_rating(self, course_id: UUID, rating: int, skip: int = 0, limit: int = 100) -> List[CourseReview]:
         result = await self.db.execute(
             select(CourseReview)
             .where(
@@ -159,7 +160,7 @@ class CourseReviewRepository:
                     CourseReview.delete_flg == False
                 )
             )
-            .order_by(CourseReview.created_at.desc())
+            .order_by(CourseReview.create_at.desc())
             .offset(skip)
             .limit(limit)
         )
@@ -188,7 +189,7 @@ class CourseReviewRepository:
 
         return distribution
 
-    async def search_in_comments(self, course_id: UUID, search_term: str, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> list[CourseReview]:
+    async def search_in_comments(self, course_id: UUID, search_term: str, delete_flg: bool | None, skip: int = 0, limit: int = 100) -> List[CourseReview]:
         query = select(CourseReview).where(
             and_(
                 CourseReview.course_id == course_id,
@@ -196,7 +197,7 @@ class CourseReviewRepository:
             )
         )
 
-        if not delete_flg:
+        if not delete_flg and delete_flg is not None:
             query = query.where(
                 and_(
                   CourseReview.is_published == True,
@@ -212,7 +213,7 @@ class CourseReviewRepository:
             )
 
         query = (
-            query.order_by(CourseReview.created_at.desc())
+            query.order_by(CourseReview.create_at.desc())
             .offset(skip)
             .limit(limit)
         )
@@ -221,7 +222,7 @@ class CourseReviewRepository:
 
         return result.scalars().all()
 
-    async def publish(self, id: UUID) -> CourseReview | None:
+    async def publish(self, id: UUID) -> Optional[CourseReview]:
         courseReview = await self.get_by_id(id, False)
 
         if not courseReview:
@@ -231,7 +232,7 @@ class CourseReviewRepository:
         await self.db.commit()
         return courseReview
 
-    async def unpublish(self, id: UUID) -> CourseReview | None:
+    async def unpublish(self, id: UUID) -> Optional[CourseReview]:
         courseReview = await self.get_by_id(id, None)
 
         if not courseReview:

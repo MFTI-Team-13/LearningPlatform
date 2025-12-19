@@ -1,13 +1,12 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, String, Text
+import uuid
+from sqlalchemy import Enum, DateTime, Column,Boolean,String,Text,ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.modules.courses.enums import CourseLevel
-
 from .Base import Base
+from app.modules.courses.enums import CourseLevel
 
 
 class Course(Base):

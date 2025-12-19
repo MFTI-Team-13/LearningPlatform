@@ -1,14 +1,15 @@
+from typing import Optional
 from datetime import datetime
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class CourseReviewBase(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
   rating: int = Field(..., ge=1, le=5, description="Рейтинг от 1 до 5")
-  comment: str | None = Field(None, max_length=2000, description="Комментарий")
+  comment: Optional[str] = Field(None, max_length=2000, description="Комментарий")
   is_published: bool = Field(default=True, description="Опубликован ли отзыв")
 
   @field_validator('rating')
@@ -20,7 +21,7 @@ class CourseReviewBase(BaseModel):
 
   @field_validator('comment')
   @classmethod
-  def validate_comment(cls, v: str | None) -> str | None:
+  def validate_comment(cls, v: Optional[str]) -> Optional[str]:
     if v and len(v.strip()) < 10:
       raise ValueError('Комментарий должен содержать минимум 10 символов')
     return v
@@ -34,14 +35,14 @@ class CourseReviewBase(BaseModel):
 
 class CourseReviewCreate(CourseReviewBase):
   course_id: UUID = Field(..., description="ID курса")
-  user_id: UUID = Field(..., description="ID пользователя")
+  pass
 
 
 class CourseReviewUpdate(BaseModel):
   model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
-  rating: int | None = Field(None, ge=1, le=5)
-  comment: str | None = Field(None, max_length=2000)
+  rating: Optional[int] = Field(None, ge=1, le=5)
+  comment: Optional[str] = Field(None, max_length=2000)
 
   @model_validator(mode='after')
   def validate_not_all_null(self):
@@ -58,13 +59,13 @@ class CourseReviewResponse(BaseModel):
 
   id: UUID
   rating: int
-  comment: str | None
+  comment: Optional[str]
   is_published: bool
   course_id: UUID
   user_id: UUID
   delete_flg: bool
-  created_at: datetime
-  updated_at: datetime
+  create_at: datetime
+  update_at: datetime
 
 
 class CourseReviewWithCourse(CourseReviewResponse):

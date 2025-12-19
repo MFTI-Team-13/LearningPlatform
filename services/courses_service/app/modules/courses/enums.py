@@ -1,6 +1,5 @@
 import enum
 
-
 class ContentType(enum.Enum):
   TEXT = "text"
   VIDEO = "video"

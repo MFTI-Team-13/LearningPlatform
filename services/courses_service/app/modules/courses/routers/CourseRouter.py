@@ -14,7 +14,7 @@ from app.modules.courses.enums import CourseLevel
 from app.common.deps.auth import get_current_user,CurrentUser
 from .requre import require_roles
 
-router = APIRouter(prefix="/course")
+router = APIRouter()
 
 #teacher
 @router.post("/create", response_model=CourseResponse, dependencies=[Depends(require_roles("admin", "teacher"))])

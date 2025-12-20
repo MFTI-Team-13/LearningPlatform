@@ -9,6 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.courses.models_import import *
 from app.common.db.session import get_session
 
+from app.modules.courses.models.Answer import Answer
+from app.modules.courses.models.Course import Course
+
+from app.modules.courses.models.Question import Question
+
+from app.modules.courses.models.Test import Test
+
+from app.modules.courses.models.Lesson import Lesson
+
+from app.modules.courses.models.CourseUser import CourseUser
+
 
 class AnswerRepository:
   def __init__(self, db: AsyncSession):

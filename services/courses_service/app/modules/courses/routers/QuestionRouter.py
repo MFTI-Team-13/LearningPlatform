@@ -17,7 +17,7 @@ from app.modules.courses.enums import QuestionType
 from app.common.deps.auth import get_current_user,CurrentUser
 from .requre import require_roles
 
-router = APIRouter(prefix="/question", tags=["Questions"])
+router = APIRouter()
 
 @router.post("/create", response_model=QuestionResponse, dependencies=[Depends(require_roles("admin","teacher"))])
 async def create_question(

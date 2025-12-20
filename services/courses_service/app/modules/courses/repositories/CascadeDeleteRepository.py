@@ -6,6 +6,20 @@ from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.courses.models_import import *
 
+from app.modules.courses.models.CourseUser import CourseUser
+
+from app.modules.courses.models.Lesson import Lesson
+
+from app.modules.courses.models.CourseReview import CourseReview
+
+from app.modules.courses.models.Test import Test
+
+from app.modules.courses.models.Question import Question
+
+from app.modules.courses.models.Answer import Answer
+
+from app.modules.courses.models.Course import Course
+
 
 class CascadeDeleteRepository:
   def __init__(self, db: AsyncSession):

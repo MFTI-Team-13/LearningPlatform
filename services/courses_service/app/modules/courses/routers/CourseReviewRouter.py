@@ -16,7 +16,7 @@ from app.modules.courses.exceptions import handle_errors
 from app.common.deps.auth import get_current_user,CurrentUser
 from .requre import require_roles
 
-router = APIRouter(prefix="/courseReview")
+router = APIRouter()
 
 
 @router.post("/create", response_model=CourseReviewResponse,dependencies=[Depends(require_roles("student"))])

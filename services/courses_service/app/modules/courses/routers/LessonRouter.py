@@ -14,7 +14,7 @@ from app.modules.courses.exceptions import handle_errors
 from app.common.deps.auth import get_current_user,CurrentUser
 from .requre import require_roles
 
-router = APIRouter(prefix="/lesson")
+router = APIRouter()
 
 @router.post("/create", response_model=LessonResponse, dependencies=[Depends(require_roles("admin","teacher"))])
 async def create_lesson(

@@ -15,11 +15,12 @@ RUN python -m pip install --upgrade pip \
 
 COPY shared                        /app/shared
 COPY services/progress_service/app     /app/app
-#COPY services/progress_service/migrations /app/migrations
-#COPY services/progress_service/alembic.ini /app/alembic.ini
+COPY services/progress_service/migrations /app/migrations
+COPY services/progress_service/alembic.ini /app/alembic.ini
 
 RUN pip install --no-cache-dir \
-      alembic asyncpg "psycopg[binary]" uvicorn debugpy watchfiles
+      alembic asyncpg "psycopg[binary]" uvicorn debugpy watchfiles \
+      pytest pytest-asyncio httpx
 
 ENV PYTHONPATH="/app:/app/shared"
 

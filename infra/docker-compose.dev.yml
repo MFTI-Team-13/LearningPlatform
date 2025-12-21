@@ -67,6 +67,7 @@ services:
     volumes:
       - ../services/courses_service/app:/app/app
       - ../services/courses_service/migrations:/app/migrations
+      - ../services/courses_service/tests:/app/tests
       - ../services/courses_service/alembic.ini:/app/alembic.ini
       - ../shared:/app/shared
     ports:
@@ -101,6 +102,7 @@ services:
     volumes:
       - ../services/progress_service/app:/app/app
       - ../services/progress_service/migrations:/app/migrations
+      - ../services/progress_service/tests:/app/tests
       - ../services/progress_service/alembic.ini:/app/alembic.ini
       - ../shared:/app/shared
     ports:

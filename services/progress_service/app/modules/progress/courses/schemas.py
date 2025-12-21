@@ -37,7 +37,7 @@ class CourseProgressBase(BaseModel):
   is_bookmarked: bool = Field(default=False)
   notifications_enabled: bool = Field(default=True)
 
-  metadata: Optional[dict[str, Any]] = Field(None)
+  meta_data: Optional[dict[str, Any]] = Field(None)
 
 
 class CourseProgressCreate(CourseProgressBase):
@@ -60,7 +60,7 @@ class CourseProgressUpdate(BaseModel):
   is_bookmarked: Optional[bool] = None
   notifications_enabled: Optional[bool] = None
 
-  metadata: Optional[dict[str, Any]] = None
+  meta_data: Optional[dict[str, Any]] = None
 
 
 class CourseProgressResponse(CourseProgressBase):

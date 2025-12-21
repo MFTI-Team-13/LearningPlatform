@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.common.db.base import Base
 from app.core.config import settings
+from sqlalchemy import Index
 
 if TYPE_CHECKING:
   from app.modules.progress.lessons.models import LessonProgress
@@ -60,7 +61,7 @@ class CourseProgress(Base):
   notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
   # Дополнительные данные
-  metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+  meta_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
   # Связи
   lessons: Mapped[list[LessonProgress]] = relationship(
@@ -70,10 +71,9 @@ class CourseProgress(Base):
     lazy="selectin"
   )
 
-  # Уникальный индекс
   __table_args__ = (
+    Index("idx_user_course_unique", "user_id", "course_id", unique=True),
     {"schema": settings.progress_schema},
-    {"unique": ["user_id", "course_id"]},
   )
 
   def update_progress(self) -> None:

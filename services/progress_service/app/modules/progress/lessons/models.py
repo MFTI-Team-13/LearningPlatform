@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.common.db.base import Base
 from app.core.config import settings
+from sqlalchemy import UniqueConstraint
 
 if TYPE_CHECKING:
   from app.modules.progress.courses.models import CourseProgress
@@ -60,7 +61,7 @@ class LessonProgress(Base):
   is_bookmarked: Mapped[bool] = mapped_column(Boolean, default=False)
 
   # Дополнительные данные
-  metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+  custom_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
   # Связи
   course: Mapped[CourseProgress] = relationship(
@@ -70,9 +71,13 @@ class LessonProgress(Base):
   )
 
   # Уникальный индекс
+  # __table_args__ = (
+  #   {"schema": settings.progress_schema},
+  #   {"unique": ["user_id", "course_id", "lesson_id"]},
+  # )
   __table_args__ = (
+    UniqueConstraint("user_id", "course_id", "lesson_id", name="uq_user_course_lesson"),
     {"schema": settings.progress_schema},
-    {"unique": ["user_id", "course_id", "lesson_id"]},
   )
 
   def update_progress(self, progress: float) -> None:

@@ -20,8 +20,8 @@ router = APIRouter()
 )
 async def create_course_progress(
   progress_data: schemas.CourseProgressCreate,
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseProgressResponse:
   """Создание записи о прогрессе курса"""
   return await services.CourseProgressService.create(db, progress_data)
@@ -34,8 +34,8 @@ async def create_course_progress(
 )
 async def get_course_progress(
   course_id: int,
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseProgressResponse:
   """Получение прогресса по конкретному курсу"""
   progress = await services.CourseProgressService.get_by_user_and_course(
@@ -59,8 +59,8 @@ async def get_course_progress(
 async def update_course_progress(
   course_id: int,
   update_data: schemas.CourseProgressUpdate,
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseProgressResponse:
   """Обновление прогресса курса"""
   progress = await services.CourseProgressService.update(
@@ -83,8 +83,8 @@ async def update_course_progress(
 )
 async def delete_course_progress(
   course_id: int,
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> None:
   """Удаление прогресса курса"""
   success = await services.CourseProgressService.delete(
@@ -105,12 +105,12 @@ async def delete_course_progress(
   dependencies=[Depends(require_role("student", "teacher"))]
 )
 async def list_course_progress(
+  current_user: CurrentUserDep,
   skip: int = Query(0, ge=0, description="Смещение"),
   limit: int = Query(100, ge=1, le=500, description="Лимит"),
   status: Optional[schemas.CourseProgressStatus] = Query(None, description="Фильтр по статусу"),
   is_favorite: Optional[bool] = Query(None, description="Фильтр по избранному"),
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.PaginatedCourseProgress:
   """Получение списка прогресса по курсам с пагинацией"""
   return await services.CourseProgressService.get_user_courses(
@@ -131,8 +131,8 @@ async def list_course_progress(
 )
 async def bulk_update_course_progress(
   updates: list[schemas.BulkCourseProgressUpdate],
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.BulkCourseProgressResponse:
   """Массовое обновление прогресса курсов"""
   return await services.CourseProgressService.bulk_update(
@@ -147,8 +147,8 @@ async def bulk_update_course_progress(
 )
 async def archive_course_progress(
   course_id: int,
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseProgressResponse:
   """Архивация прогресса курса"""
   progress = await services.CourseProgressService.archive(
@@ -171,8 +171,8 @@ async def archive_course_progress(
 )
 async def toggle_course_favorite(
   course_id: int,
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseProgressResponse:
   """Переключение избранного статуса курса"""
   progress = await services.CourseProgressService.toggle_favorite(
@@ -195,9 +195,9 @@ async def toggle_course_favorite(
 )
 async def record_course_time(
   course_id: int,
+  current_user: CurrentUserDep,
   seconds: int = Query(..., ge=0, description="Количество секунд"),
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseProgressResponse:
   """Запись времени, проведенного на курсе"""
   progress = await services.CourseProgressService.record_time_spent(
@@ -220,8 +220,8 @@ async def record_course_time(
   dependencies=[Depends(require_role("student", "teacher"))]
 )
 async def get_user_courses_summary(
+  current_user: CurrentUserDep,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.UserCoursesSummary:
   """Получение сводки по курсам пользователя"""
   return await services.CourseProgressService.get_user_summary(
@@ -235,9 +235,9 @@ async def get_user_courses_summary(
   dependencies=[Depends(require_role("teacher", "admin"))]
 )
 async def get_course_statistics(
+  current_user: CurrentUserDep,
   course_id: int,
   db: AsyncSession = Depends(get_db),
-  current_user: CurrentUserDep = Depends(),
 ) -> schemas.CourseStats:
   """Получение статистики по курсу (требуются права преподавателя или администратора)"""
   return await services.CourseProgressService.get_course_stats(db, course_id)

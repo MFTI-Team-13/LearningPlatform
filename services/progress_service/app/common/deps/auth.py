@@ -1,4 +1,3 @@
-# app/common/deps/auth.py
 from __future__ import annotations
 
 from typing import Annotated, Any

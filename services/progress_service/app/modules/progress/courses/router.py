@@ -12,7 +12,6 @@ from app.modules.progress.courses import schemas, services
 router = APIRouter()
 
 
-# Основные CRUD операции
 @router.post(
   "/",
   response_model=schemas.CourseProgressResponse,

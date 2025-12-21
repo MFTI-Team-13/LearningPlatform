@@ -36,7 +36,6 @@ def create_app() -> FastAPI:
   async def _startup_attach() -> None:
     try_pycharm_attach()
 
-  # app.add_event_handler("startup", _startup_attach)
 
   app.include_router(main_router)
   return app

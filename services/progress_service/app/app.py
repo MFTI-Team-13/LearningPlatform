@@ -4,7 +4,6 @@ from fastapi import FastAPI
 
 from app.api.main_router import main_router
 
-
 def try_pycharm_attach() -> None:
   if os.getenv("PYCHARM_ATTACH", "0").lower() in ("1", "true", "yes"):
     try:
@@ -37,7 +36,6 @@ def create_app() -> FastAPI:
   async def _startup_attach() -> None:
     try_pycharm_attach()
 
-  # app.add_event_handler("startup", _startup_attach)
 
   app.include_router(main_router)
   return app

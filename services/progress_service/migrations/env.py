@@ -8,8 +8,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from app.common.db import models_registry  # noqa: F401
+# from app.common.db import models_registry  # noqa: F401
 from app.common.db.base import Base
+# from app.db import models_registry  # noqa: F401  ← Исправлено
+# from app.db.base import Base
 from app.core.config import DATABASE_URL
 
 config = context.config
